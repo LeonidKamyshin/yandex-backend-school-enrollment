@@ -8,10 +8,11 @@ import lombok.Data;
 
 @Data
 public class ShopUnitImportRequest {
+
   @Valid
   @NotNull
   private List<ShopUnitImport> items;
 
   @NotNull
-  private LocalDateTime updateDate;
+  private String updateDate;
 }
