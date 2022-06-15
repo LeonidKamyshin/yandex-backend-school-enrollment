@@ -1,4 +1,4 @@
-package com.yandex.enrollment.api.model;
+package com.yandex.enrollment.api.model.shop;
 
 public enum ShopUnitType {
   OFFER,

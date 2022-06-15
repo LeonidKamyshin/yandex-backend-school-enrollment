@@ -1,9 +1,9 @@
-package com.yandex.enrollment.api.model;
+package com.yandex.enrollment.api.model.shop;
 
 import java.util.List;
 import lombok.Data;
 
 @Data
 public class ShopUnitStatisticResponse {
-  List<ShopUnitStatisticsUnit> items;
+  private List<ShopUnitStatisticsUnit> items;
 }

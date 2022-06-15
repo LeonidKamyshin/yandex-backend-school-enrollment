@@ -1,11 +1,9 @@
 package com.yandex.enrollment.api.service;
 
-import com.yandex.enrollment.api.model.ShopUnit;
-import com.yandex.enrollment.api.model.ShopUnitImportRequest;
-import com.yandex.enrollment.api.model.ValidationResult;
-import java.util.Collection;
+import com.yandex.enrollment.api.model.shop.ShopUnit;
+import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
+import com.yandex.enrollment.api.model.result.ValidationResult;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +22,6 @@ public class ShopUnitValidationService {
             .stream()
             .map(r -> modelMapper.map(r, ShopUnit.class))
             .toList();
-    return new ValidationResult<>(null, shopUnits);
+    return new ValidationResult<>(shopUnits);
   }
 }
