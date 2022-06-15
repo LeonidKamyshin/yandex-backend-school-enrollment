@@ -22,10 +22,13 @@ public class MongoConfig {
   @Value("${spring.data.mongodb.authentication-database}")
   private String authDatabase;
 
+  @Value("${spring.data.mongodb.database}")
+  private String database;
+
   @Bean
   public MongoClient mongo() {
     ConnectionString connectionString = new ConnectionString(
-        "mongodb://localhost:27017/enrollment");
+        "mongodb://localhost:27017/" + database);
     MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
         .applyConnectionString(connectionString)
         .credential(
@@ -37,6 +40,6 @@ public class MongoConfig {
 
   @Bean
   public MongoTemplate mongoTemplate() {
-    return new MongoTemplate(mongo(), "enrollment");
+    return new MongoTemplate(mongo(), database);
   }
 }
