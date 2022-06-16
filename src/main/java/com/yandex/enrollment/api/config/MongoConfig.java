@@ -8,10 +8,13 @@ import com.mongodb.client.MongoClients;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.MongoTransactionManager;
+import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 @Configuration
-public class MongoConfig {
+public class MongoConfig extends AbstractMongoClientConfiguration {
 
   @Value("${spring.data.mongodb.username}")
   private String username;
@@ -26,20 +29,29 @@ public class MongoConfig {
   private String database;
 
   @Bean
-  public MongoClient mongo() {
-    ConnectionString connectionString = new ConnectionString(
+  MongoTransactionManager transactionManager(MongoDatabaseFactory dbFactory) {
+    return new MongoTransactionManager(dbFactory);
+  }
+
+  @Override
+  public MongoClient mongoClient() {
+    final ConnectionString connectionString = new ConnectionString(
         "mongodb://localhost:27017/" + database);
-    MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
+    final MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
         .applyConnectionString(connectionString)
         .credential(
             MongoCredential.createCredential(username, authDatabase, password.toCharArray()))
         .build();
-
     return MongoClients.create(mongoClientSettings);
   }
 
   @Bean
   public MongoTemplate mongoTemplate() {
-    return new MongoTemplate(mongo(), database);
+    return new MongoTemplate(mongoClient(), database);
+  }
+
+  @Override
+  protected String getDatabaseName() {
+    return database;
   }
 }

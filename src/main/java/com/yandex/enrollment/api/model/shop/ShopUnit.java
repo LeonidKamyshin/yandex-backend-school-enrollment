@@ -1,16 +1,26 @@
 package com.yandex.enrollment.api.model.shop;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import java.util.ArrayList;
 import java.util.List;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.With;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Reference;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @Document(collection = "shop_units")
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class ShopUnit {
 
   @Id
@@ -30,9 +40,17 @@ public class ShopUnit {
 
   private Long price;
 
+  @JsonIgnore
+  @Builder.Default
+  private Long truePrice = 0L;
+
+  @JsonIgnore
+  @Builder.Default
+  private Long unitsCount = 0L;
+
   @Valid
   @Reference
-  private List<ShopUnit> children = new ArrayList<>();
+  private List<ShopUnit> children;
 
   public void addChild(ShopUnit child) {
     children.add(child);

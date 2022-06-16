@@ -19,6 +19,6 @@ public interface ShopUnitRepository extends MongoRepository<ShopUnit, String> {
   @Query(value = "{'_id': {$in: ?0}}", fields = "{'_id': 1}")
   Collection<ShopUnit> getExistingIds(Collection<@NotNull String> id);
 
-  @Query(value = "{'_id': {$in: ?0}}", fields = "{'_id': 1, 'parentId': 1}")
-  Collection<ShopUnit> getAllParentIdByIdIn(Collection<@NotNull String> id);
+  @Query(value = "{'_id': {$in: ?0}}", fields = "{'children': 0}")
+  Collection<ShopUnit> getAllWithoutChildrenIdByIdIn(Collection<@NotNull String> id);
 }
