@@ -56,8 +56,10 @@ public class ShopUnitTemplate {
       bulkOps.updateOne(query, update);
     });
 
-    Map<String, ShopUnit> repositoryPrice = repository.getAllWithoutChildrenIdByIdIn(shopUnits.stream()
-        .map(ShopUnit::getId).toList()).stream().collect(Collectors.toMap(ShopUnit::getId, x -> x));
+    Map<String, ShopUnit> repositoryPrice = repository.getAllWithoutChildrenIdByIdIn(
+            shopUnits.stream()
+                .map(ShopUnit::getId).toList()).stream()
+        .collect(Collectors.toMap(ShopUnit::getId, x -> x));
 
     List<ShopUnit> priceDif = shopUnits.stream().map(shopUnit -> ShopUnit.builder()
         .date(shopUnit.getDate())
@@ -104,7 +106,6 @@ public class ShopUnitTemplate {
             .addChild(pushShopUnit);
       }
     });
-
 
     bulkPullChild(pullChildRequest.values());
 
@@ -183,19 +184,22 @@ public class ShopUnitTemplate {
 
           curShopUnit.setTruePrice(curShopUnit.getTruePrice() + shopUnit.getTruePrice());
 
-          if(insert){
+          if (insert) {
             update.inc("unitsCount", shopUnit.getUnitsCount());
             curShopUnit.setUnitsCount(curShopUnit.getUnitsCount() + shopUnit.getUnitsCount());
           }
-          update.set("price", curShopUnit.getTruePrice()/ curShopUnit.getUnitsCount());
+          update.set("price", curShopUnit.getTruePrice() / curShopUnit.getUnitsCount());
           bulkOps.updateOne(query, update);
         }
-        bulkOps.execute();
+        try {
+          bulkOps.execute();
+        } catch (IllegalArgumentException ignored) {
+        }
       }
     });
   }
 
-  public void bulkInsert(Collection<@NotNull ShopUnit> shopUnits){
+  public void bulkInsert(Collection<@NotNull ShopUnit> shopUnits) {
     if (shopUnits.size() == 0) {
       return;
     }
@@ -205,7 +209,7 @@ public class ShopUnitTemplate {
 
     HashMap<String, ShopUnit> pushChildRequest = new HashMap<>();
     shopUnits.forEach(shopUnit -> {
-      if(!shopUnitsById.containsKey(shopUnit.getParentId())){
+      if (!shopUnitsById.containsKey(shopUnit.getParentId())) {
         pushChildRequest.putIfAbsent(shopUnit.getParentId(),
             ShopUnit.builder().id(shopUnit.getParentId()).children(new ArrayList<>()).build());
         ShopUnit pushShopUnit = ShopUnit.builder()

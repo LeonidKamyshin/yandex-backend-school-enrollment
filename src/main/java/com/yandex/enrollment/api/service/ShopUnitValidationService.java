@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -49,6 +50,7 @@ public class ShopUnitValidationService {
     LOGGER.info("Проверка 4 " + checkCategoryPrice().test(shopUnits));
     LOGGER.info("Проверка 5 " + checkOfferPrice().test(shopUnits));
     LOGGER.info("Проверка 6 " + checkDateFormat().test(shopUnits));
+    LOGGER.info("Проверка 7 " + checkUUIDFormat().test(shopUnits));
 
     ValidationResult<Collection<ShopUnit>> result = new ValidationResult<>(shopUnits);
     if (!checkCorrect().test(shopUnits)) {
@@ -69,7 +71,8 @@ public class ShopUnitValidationService {
         .and(checkParentType())
         .and(checkCategoryPrice())
         .and(checkOfferPrice())
-        .and(checkDateFormat());
+        .and(checkDateFormat())
+        .and(checkUUIDFormat());
   }
 
   /**
@@ -154,6 +157,28 @@ public class ShopUnitValidationService {
           }
           try {
             Instant.from(DateTimeFormatter.ISO_INSTANT.parse(shopUnit.getDate()));
+            return false;
+          } catch (DateTimeParseException e) {
+            LOGGER.info("Incorrect date in ShopUnitImportRequest");
+            return true;
+          }
+        });
+  }
+
+  /**
+   * Валидация, что id в формате UUID
+   *
+   * @return true если валидно
+   */
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private Predicate<Collection<ShopUnit>> checkUUIDFormat() {
+    return shopUnits -> shopUnits.stream()
+        .noneMatch(shopUnit -> {
+          try {
+            if (shopUnit.getParentId() != null) {
+              UUID.fromString(shopUnit.getParentId());
+            }
+            UUID.fromString(shopUnit.getId());
             return false;
           } catch (DateTimeParseException e) {
             LOGGER.info("Incorrect date in ShopUnitImportRequest");

@@ -21,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ShopUnitService {
@@ -41,7 +40,7 @@ public class ShopUnitService {
     this.template = template;
   }
 
-//  @Transactional
+  //  @Transactional
   public Optional<Error> importShopUnit(ShopUnitImportRequest request) {
     ValidationResult<Collection<ShopUnit>> validationResult =
         validationService.validateShopUnitImportRequest(request);
@@ -52,7 +51,6 @@ public class ShopUnitService {
           .map(ShopUnit::getId).collect(Collectors.toCollection(HashSet::new));
       List<ShopUnit> insertShopUnits = shopUnits.stream()
           .filter(shopUnit -> !updateIds.contains(shopUnit.getId())).toList();
-
 
       List<ShopUnit> updateShopUnits = shopUnits.stream()
           .filter(shopUnit -> updateIds.contains(shopUnit.getId())).toList();
@@ -85,11 +83,11 @@ public class ShopUnitService {
     }
   }
 
-  private List<String> getSubtreeIds(ShopUnit root){
+  private List<String> getSubtreeIds(ShopUnit root) {
     List<String> ids = new ArrayList<>();
     Stack<ShopUnit> q = new Stack<>();
     q.push(root);
-    while(!q.empty()){
+    while (!q.empty()) {
       ShopUnit cur = q.peek();
       q.pop();
       ids.add(cur.getId());
@@ -100,15 +98,16 @@ public class ShopUnitService {
 
   /**
    * Костыль, потому что не смог исправить null -> [] после бд
+   *
    * @param root корень запроса get
    */
-  private void resetNulls(ShopUnit root){
+  private void resetNulls(ShopUnit root) {
     Stack<ShopUnit> q = new Stack<>();
     q.push(root);
-    while(!q.empty()){
+    while (!q.empty()) {
       ShopUnit cur = q.peek();
       q.pop();
-      if(cur.getType() == ShopUnitType.OFFER){
+      if (cur.getType() == ShopUnitType.OFFER) {
         cur.setChildren(null);
         continue;
       }

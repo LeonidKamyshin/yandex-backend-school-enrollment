@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

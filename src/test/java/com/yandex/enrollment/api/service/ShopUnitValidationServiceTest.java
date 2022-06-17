@@ -37,7 +37,7 @@ class ShopUnitValidationServiceTest {
 
   private static final String UPDATE_DATE = "2022-06-28T21:12:01.000Z";
   private static final String UPDATE_DATE_BAD_FORMAT = "28-2022T21:12:01.000Z";
-  private static final String REPOSITORY_OFFER_ID = "REPOSITORY_OFFER_ID";
+  private static final String REPOSITORY_OFFER_ID = "3fa85f64-5717-4562-b3fc-2c963f66a000";
 
   private ShopUnitValidationService validationService;
 
@@ -83,10 +83,10 @@ class ShopUnitValidationServiceTest {
 
   private static ShopUnitImportRequest createRequestSameId() {
     List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("1").name("name:3").parentId(null).type(ShopUnitType.OFFER)
-            .price(100L).build(),
-        ShopUnitImport.builder().id("1").name("name:1").parentId(null).type(ShopUnitType.CATEGORY)
-            .price(null).build()
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId(null).type(ShopUnitType.OFFER).price(100L).build(),
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1")
+            .parentId(null).type(ShopUnitType.CATEGORY).price(null).build()
     );
 
     return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
@@ -94,9 +94,11 @@ class ShopUnitValidationServiceTest {
 
   private static ShopUnitImportRequest createRequestParentTypeIsOffer() {
     List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("1").name("name:3").parentId("2").type(ShopUnitType.OFFER)
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId("3fa85f64-5717-4562-b3fc-2c963f66a442").type(ShopUnitType.OFFER)
             .price(100L).build(),
-        ShopUnitImport.builder().id("2").name("name:1").parentId(null).type(ShopUnitType.OFFER)
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:1")
+            .parentId(null).type(ShopUnitType.OFFER)
             .price(100L).build()
     );
 
@@ -105,8 +107,8 @@ class ShopUnitValidationServiceTest {
 
   private static ShopUnitImportRequest createRequestCategoryWithPrice() {
     List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("1").name("name:1").parentId(null).type(ShopUnitType.CATEGORY)
-            .price(1L).build()
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1")
+            .parentId(null).type(ShopUnitType.CATEGORY).price(1L).build()
     );
 
     return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
@@ -114,8 +116,8 @@ class ShopUnitValidationServiceTest {
 
   private static ShopUnitImportRequest createRequestOfferWithNoPrice() {
     List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("1").name("name:3").parentId("2").type(ShopUnitType.OFFER)
-            .price(null).build()
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId(null).type(ShopUnitType.OFFER).price(null).build()
     );
 
     return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
@@ -123,10 +125,10 @@ class ShopUnitValidationServiceTest {
 
   private static ShopUnitImportRequest createRequestDateBadFormat() {
     List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("1").name("name:3").parentId(null).type(ShopUnitType.OFFER)
-            .price(100L).build(),
-        ShopUnitImport.builder().id("2").name("name:1").parentId(null).type(ShopUnitType.CATEGORY)
-            .price(null).build()
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId(null).type(ShopUnitType.OFFER).price(100L).build(),
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:1")
+            .parentId(null).type(ShopUnitType.CATEGORY).price(null).build()
     );
 
     return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE_BAD_FORMAT).build();
@@ -143,11 +145,16 @@ class ShopUnitValidationServiceTest {
   private static Stream<Arguments> createTestSuccess() {
     List<ShopUnitImport> items = new ArrayList<>();
     items.add(ShopUnitImport.builder()
-        .id("1").name("name:1").parentId(null).type(ShopUnitType.CATEGORY).price(null).build());
+        .id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1").parentId(null)
+        .type(ShopUnitType.CATEGORY).price(null).build());
     items.add(ShopUnitImport.builder()
-        .id("2").name("name:2").parentId("1").type(ShopUnitType.CATEGORY).price(null).build());
+        .id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:2")
+        .parentId("3fa85f64-5717-4562-b3fc-2c963f66a441").type(ShopUnitType.CATEGORY).price(null)
+        .build());
     items.add(ShopUnitImport.builder()
-        .id("3").name("name:3").parentId("1").type(ShopUnitType.OFFER).price(100L).build());
+        .id("3fa85f64-5717-4562-b3fc-2c963f66a443").name("name:3")
+        .parentId("3fa85f64-5717-4562-b3fc-2c963f66a441").type(ShopUnitType.OFFER).price(100L)
+        .build());
     ShopUnitImportRequest request = ShopUnitImportRequest.builder().items(items).updateDate(
         UPDATE_DATE).build();
 
