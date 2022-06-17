@@ -10,6 +10,7 @@ import com.yandex.enrollment.api.repository.ShopUnitRepository;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +49,8 @@ public class ShopUnitValidationService {
     LOGGER.info("Проверка 4 " + checkCategoryPrice().test(shopUnits));
     LOGGER.info("Проверка 5 " + checkOfferPrice().test(shopUnits));
     LOGGER.info("Проверка 6 " + checkDateFormat().test(shopUnits));
-    ValidationResult<Collection<ShopUnit>> result = new ValidationResult<>(shopUnits);
 
+    ValidationResult<Collection<ShopUnit>> result = new ValidationResult<>(shopUnits);
     if (!checkCorrect().test(shopUnits)) {
       result.addError(ErrorType.VALIDATION_FAILED_ERROR.getError());
     }
@@ -59,6 +60,7 @@ public class ShopUnitValidationService {
 
   /**
    * Создает предикат на полную валидацию запроса на импорт
+   *
    * @return предикат, значение которого == валидность запроса
    */
   private Predicate<Collection<ShopUnit>> checkCorrect() {
@@ -72,6 +74,7 @@ public class ShopUnitValidationService {
 
   /**
    * Валидация, что uuid товара или категории является уникальным среди товаров и категорий
+   *
    * @return true, если uuid товара или категории является уникальным среди товаров и категорий
    */
   private Predicate<Collection<ShopUnit>> checkTypeMatchRowsWithSameId() {
@@ -83,13 +86,14 @@ public class ShopUnitValidationService {
 
       return shopUnits.stream().noneMatch(
           shopUnit -> repoShopUnitTypeById.getOrDefault(shopUnit.getId(), shopUnit.getType())
-                  != shopUnit.getType()
+              != shopUnit.getType()
       );
     };
   }
 
   /**
    * Валидация, что родителем товара или категории может быть только категория
+   *
    * @return true если валидно
    */
   private Predicate<Collection<ShopUnit>> checkParentType() {
@@ -108,6 +112,7 @@ public class ShopUnitValidationService {
 
   /**
    * Валидация, что цена категории null
+   *
    * @return true если валидно
    */
   private Predicate<Collection<ShopUnit>> checkCategoryPrice() {
@@ -118,17 +123,18 @@ public class ShopUnitValidationService {
 
   /**
    * Валидация, что цена оффера не null
+   *
    * @return true если валидно
    */
   private Predicate<Collection<ShopUnit>> checkOfferPrice() {
     return shopUnits -> shopUnits.stream()
         .noneMatch(shopUnit -> shopUnit.getType().equals(ShopUnitType.OFFER)
-            && Objects.isNull(shopUnit.getPrice())
-            && shopUnit.getPrice() >= 0);
+            && (Objects.isNull(shopUnit.getPrice()) || shopUnit.getPrice() < 0L));
   }
 
   /**
    * Валидация, что в одном запросе не может быть двух элементов с одинаковым id
+   *
    * @return true если валидно
    */
   private Predicate<Collection<ShopUnit>> checkIdsUnique() {
@@ -137,11 +143,15 @@ public class ShopUnitValidationService {
 
   /**
    * Валидация, что дата в формате ISO 860
+   *
    * @return true если валидно
    */
   private Predicate<Collection<ShopUnit>> checkDateFormat() {
     return shopUnits -> shopUnits.stream()
         .noneMatch(shopUnit -> {
+          if (shopUnit.getDate() == null) {
+            return true;
+          }
           try {
             Instant.from(DateTimeFormatter.ISO_INSTANT.parse(shopUnit.getDate()));
             return false;
