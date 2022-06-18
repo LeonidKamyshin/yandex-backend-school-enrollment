@@ -3,6 +3,7 @@ package com.yandex.enrollment.api.model.shop;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.yandex.enrollment.api.utils.DateUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -57,5 +58,9 @@ public class ShopUnit {
 
   public void addChild(ShopUnit child) {
     children.add(child);
+  }
+
+  public void setDate(String date) {
+    this.date = DateUtils.unifyDate(date);
   }
 }

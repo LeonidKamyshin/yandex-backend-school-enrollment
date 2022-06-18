@@ -56,7 +56,7 @@ public class ShopUnitTemplate {
       bulkOps.updateOne(query, update);
     });
 
-    Map<String, ShopUnit> repositoryPrice = repository.getAllWithoutChildrenIdByIdIn(
+    Map<String, ShopUnit> repositoryPrice = repository.findAllWithoutChildrenIdByIdIn(
             shopUnits.stream()
                 .map(ShopUnit::getId).toList()).stream()
         .collect(Collectors.toMap(ShopUnit::getId, x -> x));
@@ -84,7 +84,7 @@ public class ShopUnitTemplate {
     HashMap<String, ShopUnit> pullChildRequest = new HashMap<>();
     HashMap<String, ShopUnit> pushChildRequest = new HashMap<>();
     Collection<ShopUnit> repositoryShopUnits =
-        repository.getAllWithoutChildrenIdByIdIn(shopUnits.stream().map(ShopUnit::getId).toList());
+        repository.findAllWithoutChildrenIdByIdIn(shopUnits.stream().map(ShopUnit::getId).toList());
 
     repositoryShopUnits.forEach(repositoryShopUnit -> {
       ShopUnit updateShopUnit = shopUnitsById.get(repositoryShopUnit.getId());
@@ -173,7 +173,7 @@ public class ShopUnitTemplate {
         BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
         ShopUnit curShopUnit = shopUnit;
         while (!Objects.isNull(curShopUnit.getParentId())) {
-          List<ShopUnit> parent = repository.getAllWithoutChildrenIdByIdIn(
+          List<ShopUnit> parent = repository.findAllWithoutChildrenIdByIdIn(
               Collections.singleton(curShopUnit.getParentId())).stream().toList();
           curShopUnit = parent.get(0);
           Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));

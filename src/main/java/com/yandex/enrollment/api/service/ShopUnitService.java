@@ -7,9 +7,11 @@ import com.yandex.enrollment.api.model.result.ApiResult;
 import com.yandex.enrollment.api.model.result.ValidationResult;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
+import com.yandex.enrollment.api.model.shop.ShopUnitStatisticResponse;
 import com.yandex.enrollment.api.model.shop.ShopUnitType;
 import com.yandex.enrollment.api.repository.ShopUnitRepository;
 import com.yandex.enrollment.api.template.ShopUnitTemplate;
+import com.yandex.enrollment.api.utils.DateUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,13 +32,16 @@ public class ShopUnitService {
   private final ShopUnitTemplate template;
   private final ShopUnitRepository repository;
   private final ShopUnitValidationService validationService;
+  private final ShopUnitConverterService converterService;
 
   @Autowired
   public ShopUnitService(ShopUnitRepository repository,
       ShopUnitValidationService validationService,
+      ShopUnitConverterService converterService,
       ShopUnitTemplate template) {
     this.repository = repository;
     this.validationService = validationService;
+    this.converterService = converterService;
     this.template = template;
   }
 
@@ -47,7 +52,7 @@ public class ShopUnitService {
     if (!validationResult.hasErrors()) {
       Collection<ShopUnit> shopUnits = validationResult.getResult();
       List<String> ids = shopUnits.stream().map(ShopUnit::getId).toList();
-      HashSet<String> updateIds = repository.getExistingIds(ids).stream()
+      HashSet<String> updateIds = repository.findExistingIds(ids).stream()
           .map(ShopUnit::getId).collect(Collectors.toCollection(HashSet::new));
       List<ShopUnit> insertShopUnits = shopUnits.stream()
           .filter(shopUnit -> !updateIds.contains(shopUnit.getId())).toList();
@@ -113,5 +118,18 @@ public class ShopUnitService {
       }
       cur.getChildren().forEach(q::push);
     }
+  }
+
+  public ApiResult<ShopUnitStatisticResponse> getSales(String date){
+      ValidationResult<String> dateStart = validationService.validateSalesDate(date);
+      if(dateStart.hasErrors()){
+        return new ApiResult<>(dateStart.getError());
+      }
+      else{
+        String dateEnd = DateUtils.unifyDate(date);
+        Collection<ShopUnit> shopUnits = repository
+            .findAllByTypeAndDateInterval(ShopUnitType.OFFER, dateStart.getResult(), dateEnd);
+        return new ApiResult<>(converterService.convertShopUnit(shopUnits));
+      }
   }
 }

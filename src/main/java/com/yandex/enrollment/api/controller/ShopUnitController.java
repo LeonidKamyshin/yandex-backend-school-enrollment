@@ -5,7 +5,9 @@ import com.yandex.enrollment.api.model.error.Error;
 import com.yandex.enrollment.api.model.result.ApiResult;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
+import com.yandex.enrollment.api.model.shop.ShopUnitStatisticResponse;
 import com.yandex.enrollment.api.service.ShopUnitService;
+import java.util.Collection;
 import java.util.Optional;
 import javax.validation.Valid;
 import org.apache.logging.log4j.LogManager;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -60,4 +63,16 @@ public class ShopUnitController {
     }
   }
 
+  @GetMapping(value = "/sales")
+  public ShopUnitStatisticResponse getSales(
+      @RequestParam(name = "date", defaultValue = "Ahmed") String date)
+      throws ApiException {
+    LOGGER.info("Entering api endpoint to get sales by date: " + date);
+    ApiResult<ShopUnitStatisticResponse> result = service.getSales(date);
+    if (result.hasErrors()) {
+      throw new ApiException(result.getError());
+    } else {
+      return result.getResult();
+    }
+  }
 }

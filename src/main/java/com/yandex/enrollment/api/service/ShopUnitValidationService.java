@@ -7,28 +7,38 @@ import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
 import com.yandex.enrollment.api.model.result.ValidationResult;
 import com.yandex.enrollment.api.model.shop.ShopUnitType;
 import com.yandex.enrollment.api.repository.ShopUnitRepository;
+import com.yandex.enrollment.api.utils.DateUtils;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.validation.constraints.Null;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.aggregation.DateOperators.TemporalUnit;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ShopUnitValidationService {
 
   private static final Logger LOGGER = LogManager.getLogger(ShopUnitController.class);
+  private static final String PATTERN_FORMAT = "dd.MM.yyyy";
 
   private final ShopUnitRepository repository;
   private final ShopUnitConverterService converterService;
@@ -87,7 +97,8 @@ public class ShopUnitValidationService {
     return shopUnits -> {
       List<String> ids = shopUnits.stream().map(ShopUnit::getId)
           .filter(Objects::nonNull).toList();
-      Map<String, ShopUnitType> repoShopUnitTypeById = repository.getAllWithoutChildrenIdByIdIn(ids)
+      Map<String, ShopUnitType> repoShopUnitTypeById = repository.findAllWithoutChildrenIdByIdIn(
+              ids)
           .stream().collect(Collectors.toMap(ShopUnit::getId, ShopUnit::getType));
 
       return shopUnits.stream().noneMatch(
@@ -155,13 +166,10 @@ public class ShopUnitValidationService {
   private Predicate<Collection<ShopUnit>> checkDateFormat() {
     return shopUnits -> shopUnits.stream()
         .noneMatch(shopUnit -> {
-          if (shopUnit.getDate() == null) {
-            return true;
-          }
           try {
             Instant.from(DateTimeFormatter.ISO_INSTANT.parse(shopUnit.getDate()));
             return false;
-          } catch (DateTimeParseException e) {
+          } catch (DateTimeParseException | NullPointerException e) {
             LOGGER.info("Incorrect date in ShopUnitImportRequest");
             return true;
           }
@@ -201,5 +209,15 @@ public class ShopUnitValidationService {
           .toList();
       return repository.countByIdIn(checkUnitsParents) == checkUnitsParents.size();
     };
+  }
+
+  public ValidationResult<String> validateSalesDate(String date) {
+    if (checkDateFormat().test(Collections.singleton(ShopUnit.builder().date(date).build()))) {
+      String dateStart = DateUtils.dateToString(DateUtils.stringToDate(date)
+          .minus(1, ChronoUnit.DAYS));
+      return new ValidationResult<>(dateStart);
+    } else {
+      return new ValidationResult<>(ErrorType.VALIDATION_FAILED_ERROR.getError());
+    }
   }
 }

@@ -9,16 +9,16 @@ import org.springframework.data.mongodb.repository.Query;
 
 public interface ShopUnitRepository extends MongoRepository<ShopUnit, String> {
 
-  // Может работать некорректно т.к. TypeIn чекает наличие в коллекции
-  Long countByIdInAndTypeIn(Collection<@NotNull String> id, Collection<@NotNull ShopUnitType> type);
-
   Long countByIdIn(Collection<@NotNull String> id);
 
   Long countByIdInAndType(Collection<@NotNull String> id, @NotNull ShopUnitType type);
 
   @Query(value = "{'_id': {$in: ?0}}", fields = "{'_id': 1}")
-  Collection<ShopUnit> getExistingIds(Collection<@NotNull String> id);
+  Collection<ShopUnit> findExistingIds(Collection<@NotNull String> id);
 
   @Query(value = "{'_id': {$in: ?0}}", fields = "{'children': 0}")
-  Collection<ShopUnit> getAllWithoutChildrenIdByIdIn(Collection<@NotNull String> id);
+  Collection<ShopUnit> findAllWithoutChildrenIdByIdIn(Collection<@NotNull String> id);
+
+  @Query(value = "{'type': {$eq: ?0},'date': {$gte: ?1, $lte: ?2}}")
+  Collection<ShopUnit> findAllByTypeAndDateInterval(ShopUnitType type, String startDate, String endDate);
 }

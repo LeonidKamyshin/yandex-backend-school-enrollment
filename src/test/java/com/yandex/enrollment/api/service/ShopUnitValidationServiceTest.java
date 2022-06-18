@@ -1,9 +1,7 @@
 package com.yandex.enrollment.api.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 import com.yandex.enrollment.api.model.error.ErrorType;
@@ -15,12 +13,9 @@ import com.yandex.enrollment.api.model.shop.ShopUnitType;
 import com.yandex.enrollment.api.repository.ShopUnitRepository;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -29,7 +24,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -47,9 +41,8 @@ class ShopUnitValidationServiceTest {
   @BeforeEach
   void initService() {
     ShopUnitConverterService converterService = new ShopUnitConverterService();
-    when(repository.countByIdInAndTypeIn(any(), any())).thenReturn(1L);
     when(repository.countByIdIn(any())).thenReturn(0L);
-    when(repository.getAllWithoutChildrenIdByIdIn(any())).thenReturn(
+    when(repository.findAllWithoutChildrenIdByIdIn(any())).thenReturn(
         List.of(ShopUnit.builder().id(REPOSITORY_OFFER_ID).type(ShopUnitType.OFFER).build()));
     validationService = new ShopUnitValidationService(repository, converterService);
   }
