@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,6 +52,7 @@ public class ShopUnitValidationService {
     LOGGER.info("Проверка 5 " + checkOfferPrice().test(shopUnits));
     LOGGER.info("Проверка 6 " + checkDateFormat().test(shopUnits));
     LOGGER.info("Проверка 7 " + checkUUIDFormat().test(shopUnits));
+    LOGGER.info("Проверка 8 " + checkParentExists().test(shopUnits));
 
     ValidationResult<Collection<ShopUnit>> result = new ValidationResult<>(shopUnits);
     if (!checkCorrect().test(shopUnits)) {
@@ -72,7 +74,8 @@ public class ShopUnitValidationService {
         .and(checkCategoryPrice())
         .and(checkOfferPrice())
         .and(checkDateFormat())
-        .and(checkUUIDFormat());
+        .and(checkUUIDFormat())
+        .and(checkParentExists());
   }
 
   /**
@@ -180,10 +183,23 @@ public class ShopUnitValidationService {
             }
             UUID.fromString(shopUnit.getId());
             return false;
-          } catch (DateTimeParseException e) {
+          } catch (IllegalArgumentException e) {
             LOGGER.info("Incorrect date in ShopUnitImportRequest");
             return true;
           }
         });
+  }
+
+  private Predicate<Collection<ShopUnit>> checkParentExists() {
+    return shopUnits -> {
+      Map<String, ShopUnit> shopUnitsById = shopUnits.stream().collect(Collectors
+          .toMap(ShopUnit::getId, shopUnit -> shopUnit, (a, b) -> a, HashMap::new));
+
+      List<String> checkUnitsParents = shopUnits.stream().filter(shopUnit ->
+              shopUnit.getParentId() != null && !shopUnitsById.containsKey(shopUnit.getParentId()))
+          .map(ShopUnit::getParentId)
+          .toList();
+      return repository.countByIdIn(checkUnitsParents) == checkUnitsParents.size();
+    };
   }
 }

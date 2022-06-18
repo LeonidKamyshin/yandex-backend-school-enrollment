@@ -30,16 +30,11 @@ public class ShopUnitConverterService {
       String parentId = shopUnit.getParentId();
       if (parentId != null && shopUnitsById.containsKey(parentId) &&
           shopUnitsById.get(parentId).getType() == ShopUnitType.CATEGORY) {
-        if (shopUnitsById.get(parentId).getChildren() == null) {
-          shopUnitsById.get(parentId).setChildren(new ArrayList<>(List.of(shopUnit)));
-        } else {
-          shopUnitsById.get(parentId).addChild(shopUnit);
-        }
+        shopUnitsById.get(parentId).addChild(shopUnit);
       }
       if (shopUnit.getType() == ShopUnitType.OFFER) {
         shopUnit.setUnitsCount(1L);
         shopUnit.setTruePrice(shopUnit.getPrice());
-        shopUnit.setChildren(null);
       }
     });
     return shopUnits;

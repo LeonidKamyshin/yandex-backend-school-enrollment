@@ -33,7 +33,7 @@ public class ShopUnitController {
   @PostMapping(value = "/imports", consumes = {"application/json"})
   public void importShopUnit(@Valid @RequestBody ShopUnitImportRequest request)
       throws ApiException {
-    LOGGER.info("Entering api endpoint to import shop units: " + request.getItems().toString());
+    LOGGER.info("Entering api endpoint to import shop units" + request);
     Optional<Error> result = service.importShopUnit(request);
     if (result.isPresent()) {
       throw new ApiException(result.get());

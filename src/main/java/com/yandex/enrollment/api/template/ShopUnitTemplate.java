@@ -61,9 +61,11 @@ public class ShopUnitTemplate {
                 .map(ShopUnit::getId).toList()).stream()
         .collect(Collectors.toMap(ShopUnit::getId, x -> x));
 
-    List<ShopUnit> priceDif = shopUnits.stream().map(shopUnit -> ShopUnit.builder()
+    List<ShopUnit> priceDif = shopUnits.stream().filter(shopUnit -> shopUnit.getPrice() != null)
+        .map(shopUnit -> ShopUnit.builder()
         .date(shopUnit.getDate())
-        .price(shopUnit.getPrice() - repositoryPrice.get(shopUnit.getId()).getPrice())
+        .price(Objects.requireNonNullElse(shopUnit.getPrice(), 0L)
+            - Objects.requireNonNullElse(repositoryPrice.get(shopUnit.getId()).getPrice(), 0L))
         .parentId(shopUnit.getParentId())
         .build()).toList();
 

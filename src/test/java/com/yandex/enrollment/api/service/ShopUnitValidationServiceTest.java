@@ -48,6 +48,7 @@ class ShopUnitValidationServiceTest {
   void initService() {
     ShopUnitConverterService converterService = new ShopUnitConverterService();
     when(repository.countByIdInAndTypeIn(any(), any())).thenReturn(1L);
+    when(repository.countByIdIn(any())).thenReturn(0L);
     when(repository.getAllWithoutChildrenIdByIdIn(any())).thenReturn(
         List.of(ShopUnit.builder().id(REPOSITORY_OFFER_ID).type(ShopUnitType.OFFER).build()));
     validationService = new ShopUnitValidationService(repository, converterService);
@@ -69,7 +70,8 @@ class ShopUnitValidationServiceTest {
         Arguments.of(createRequestParentTypeIsOffer()),
         Arguments.of(createRequestCategoryWithPrice()),
         Arguments.of(createRequestOfferWithNoPrice()),
-        Arguments.of(createRequestDateBadFormat())
+        Arguments.of(createRequestDateBadFormat()),
+        Arguments.of(createRequestNoParent())
     );
   }
 
@@ -134,6 +136,15 @@ class ShopUnitValidationServiceTest {
     return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE_BAD_FORMAT).build();
   }
 
+  private static ShopUnitImportRequest createRequestNoParent() {
+    List<ShopUnitImport> items = List.of(
+        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId("3fa85f64-5717-4562-b3fc-2c963f66a442").type(ShopUnitType.OFFER).price(100L)
+            .build()
+    );
+
+    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE_BAD_FORMAT).build();
+  }
   @ParameterizedTest
   @MethodSource("createTestSuccess")
   public void validateShopUnitImportRequestSuccess(ShopUnitImportRequest request) {

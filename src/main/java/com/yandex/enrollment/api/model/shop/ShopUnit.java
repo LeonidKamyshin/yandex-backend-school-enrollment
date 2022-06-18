@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@NotNull
 public class ShopUnit {
 
   @Id
@@ -51,7 +52,8 @@ public class ShopUnit {
 
   @Valid
   @Reference
-  private List<ShopUnit> children;
+  @Builder.Default
+  private List<ShopUnit> children = new ArrayList<>();
 
   public void addChild(ShopUnit child) {
     children.add(child);
