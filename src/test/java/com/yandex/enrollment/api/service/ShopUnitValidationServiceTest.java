@@ -40,18 +40,17 @@ class ShopUnitValidationServiceTest {
 
   @BeforeEach
   void initService() {
-    ShopUnitConverterService converterService = new ShopUnitConverterService();
     when(repository.countByIdIn(any())).thenReturn(0L);
     when(repository.findAllWithoutChildrenIdByIdIn(any())).thenReturn(
         List.of(ShopUnit.builder().id(REPOSITORY_OFFER_ID).type(ShopUnitType.OFFER).build()));
-    validationService = new ShopUnitValidationService(repository, converterService);
+    validationService = new ShopUnitValidationService(repository);
   }
 
   @ParameterizedTest
   @MethodSource("createTestFail")
-  public void validateShopUnitImportRequestFail(ShopUnitImportRequest request) {
+  public void validateImportRequestFail(Collection<ShopUnit> request) {
     ValidationResult<Collection<ShopUnit>> result =
-        validationService.validateShopUnitImportRequest(request);
+        validationService.validateImportRequest(request);
     assertThat(result.hasErrors()).isTrue();
     assertThat(result.getError()).isEqualTo(ErrorType.VALIDATION_FAILED_ERROR.getError());
   }
@@ -68,100 +67,96 @@ class ShopUnitValidationServiceTest {
     );
   }
 
-  private static ShopUnitImportRequest createRequestSameType() {
-    List<ShopUnitImport> items = List.of(ShopUnitImport.builder().id(REPOSITORY_OFFER_ID)
-        .name("name:3").parentId(null).type(ShopUnitType.CATEGORY).price(null).build()
+  private static Collection<ShopUnit> createRequestSameType() {
+    return List.of(ShopUnit.builder().id(REPOSITORY_OFFER_ID)
+        .name("name:3").parentId(null).type(ShopUnitType.CATEGORY).price(null).date(UPDATE_DATE).build()
     );
-
-    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
   }
 
-  private static ShopUnitImportRequest createRequestSameId() {
-    List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
-            .parentId(null).type(ShopUnitType.OFFER).price(100L).build(),
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1")
-            .parentId(null).type(ShopUnitType.CATEGORY).price(null).build()
+  private static Collection<ShopUnit> createRequestSameId() {
+    return List.of(
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId(null).type(ShopUnitType.OFFER).price(100L).date(UPDATE_DATE).build(),
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1")
+            .parentId(null).type(ShopUnitType.CATEGORY).price(null).date(UPDATE_DATE).build()
     );
-
-    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
   }
 
-  private static ShopUnitImportRequest createRequestParentTypeIsOffer() {
-    List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+  private static Collection<ShopUnit> createRequestParentTypeIsOffer() {
+    return List.of(
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
             .parentId("3fa85f64-5717-4562-b3fc-2c963f66a442").type(ShopUnitType.OFFER)
-            .price(100L).build(),
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:1")
+            .price(100L)
+            .date(UPDATE_DATE).build(),
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:1")
             .parentId(null).type(ShopUnitType.OFFER)
-            .price(100L).build()
+            .price(100L)
+            .date(UPDATE_DATE).build()
     );
-
-    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
   }
 
-  private static ShopUnitImportRequest createRequestCategoryWithPrice() {
-    List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1")
-            .parentId(null).type(ShopUnitType.CATEGORY).price(1L).build()
+  private static Collection<ShopUnit> createRequestCategoryWithPrice() {
+    return List.of(
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1")
+            .parentId(null).type(ShopUnitType.CATEGORY).price(1L)
+            .date(UPDATE_DATE).build()
     );
-
-    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
   }
 
-  private static ShopUnitImportRequest createRequestOfferWithNoPrice() {
-    List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
-            .parentId(null).type(ShopUnitType.OFFER).price(null).build()
+  private static Collection<ShopUnit> createRequestOfferWithNoPrice() {
+    return List.of(
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId(null).type(ShopUnitType.OFFER).price(null)
+            .date(UPDATE_DATE).build()
     );
-
-    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE).build();
   }
 
-  private static ShopUnitImportRequest createRequestDateBadFormat() {
-    List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
-            .parentId(null).type(ShopUnitType.OFFER).price(100L).build(),
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:1")
-            .parentId(null).type(ShopUnitType.CATEGORY).price(null).build()
+  private static Collection<ShopUnit> createRequestDateBadFormat() {
+    return List.of(
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+            .parentId(null).type(ShopUnitType.OFFER).price(100L)
+            .date(UPDATE_DATE).build(),
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:1")
+            .parentId(null).type(ShopUnitType.CATEGORY).price(null)
+            .date(UPDATE_DATE_BAD_FORMAT).build()
     );
-
-    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE_BAD_FORMAT).build();
   }
 
-  private static ShopUnitImportRequest createRequestNoParent() {
-    List<ShopUnitImport> items = List.of(
-        ShopUnitImport.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
+  private static Collection<ShopUnit> createRequestNoParent() {
+    return List.of(
+        ShopUnit.builder().id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:3")
             .parentId("3fa85f64-5717-4562-b3fc-2c963f66a442").type(ShopUnitType.OFFER).price(100L)
+            .date(UPDATE_DATE)
             .build()
     );
-
-    return ShopUnitImportRequest.builder().items(items).updateDate(UPDATE_DATE_BAD_FORMAT).build();
   }
+
   @ParameterizedTest
   @MethodSource("createTestSuccess")
-  public void validateShopUnitImportRequestSuccess(ShopUnitImportRequest request) {
+  public void validateShopUnitImportRequestSuccess(Collection<ShopUnit> request) {
     ValidationResult<Collection<ShopUnit>> result =
-        validationService.validateShopUnitImportRequest(request);
+        validationService.validateImportRequest(request);
     assertThat(result.hasErrors()).isFalse();
   }
 
   private static Stream<Arguments> createTestSuccess() {
-    List<ShopUnitImport> items = new ArrayList<>();
-    items.add(ShopUnitImport.builder()
-        .id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1").parentId(null)
-        .type(ShopUnitType.CATEGORY).price(null).build());
-    items.add(ShopUnitImport.builder()
-        .id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:2")
-        .parentId("3fa85f64-5717-4562-b3fc-2c963f66a441").type(ShopUnitType.CATEGORY).price(null)
-        .build());
-    items.add(ShopUnitImport.builder()
-        .id("3fa85f64-5717-4562-b3fc-2c963f66a443").name("name:3")
-        .parentId("3fa85f64-5717-4562-b3fc-2c963f66a441").type(ShopUnitType.OFFER).price(100L)
-        .build());
-    ShopUnitImportRequest request = ShopUnitImportRequest.builder().items(items).updateDate(
-        UPDATE_DATE).build();
+    List<ShopUnit> items = List.of(ShopUnit.builder()
+            .id("3fa85f64-5717-4562-b3fc-2c963f66a441").name("name:1").parentId(null)
+            .type(ShopUnitType.CATEGORY).price(null)
+            .date(UPDATE_DATE).build(),
+        ShopUnit.builder()
+            .id("3fa85f64-5717-4562-b3fc-2c963f66a442").name("name:2")
+            .parentId("3fa85f64-5717-4562-b3fc-2c963f66a441").type(ShopUnitType.CATEGORY)
+            .price(null)
+            .date(UPDATE_DATE)
+            .build(),
+        ShopUnit.builder()
+            .id("3fa85f64-5717-4562-b3fc-2c963f66a443").name("name:3")
+            .parentId("3fa85f64-5717-4562-b3fc-2c963f66a441").type(ShopUnitType.OFFER).price(100L)
+            .date(UPDATE_DATE)
+            .build()
+    );
 
-    return Stream.of(Arguments.of(request));
+    return Stream.of(Arguments.of(items));
   }
 }

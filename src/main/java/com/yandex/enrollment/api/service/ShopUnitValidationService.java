@@ -2,16 +2,12 @@ package com.yandex.enrollment.api.service;
 
 import com.yandex.enrollment.api.controller.ShopUnitController;
 import com.yandex.enrollment.api.model.error.ErrorType;
-import com.yandex.enrollment.api.model.shop.ShopUnit;
-import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
 import com.yandex.enrollment.api.model.result.ValidationResult;
+import com.yandex.enrollment.api.model.shop.ShopUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitType;
 import com.yandex.enrollment.api.repository.ShopUnitRepository;
 import com.yandex.enrollment.api.utils.DateUtils;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -23,49 +19,38 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.validation.constraints.Null;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.aggregation.DateOperators.TemporalUnit;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ShopUnitValidationService {
 
   private static final Logger LOGGER = LogManager.getLogger(ShopUnitController.class);
-  private static final String PATTERN_FORMAT = "dd.MM.yyyy";
 
   private final ShopUnitRepository repository;
-  private final ShopUnitConverterService converterService;
 
   @Autowired
-  public ShopUnitValidationService(ShopUnitRepository repository,
-      ShopUnitConverterService converterService) {
+  public ShopUnitValidationService(ShopUnitRepository repository) {
     this.repository = repository;
-    this.converterService = converterService;
   }
 
-  public ValidationResult<Collection<ShopUnit>> validateShopUnitImportRequest(
-      ShopUnitImportRequest request) {
+  public ValidationResult<Collection<ShopUnit>> validateImportRequest(
+      Collection<ShopUnit> request) {
+    LOGGER.info("Проверка 1 " + checkTypeMatchRowsWithSameId().test(request));
+    LOGGER.info("Проверка 2 " + checkIdsUnique().test(request));
+    LOGGER.info("Проверка 3 " + checkParentType().test(request));
+    LOGGER.info("Проверка 4 " + checkCategoryPrice().test(request));
+    LOGGER.info("Проверка 5 " + checkOfferPrice().test(request));
+    LOGGER.info("Проверка 6 " + checkDateFormat().test(request));
+    LOGGER.info("Проверка 7 " + checkUUIDFormat().test(request));
+    LOGGER.info("Проверка 8 " + checkParentExists().test(request));
 
-    Collection<ShopUnit> shopUnits = converterService.convertShopUnitImportRequest(request);
-    LOGGER.info("Сконвертированные обьекты: " + shopUnits);
-    LOGGER.info("Проверка 1 " + checkTypeMatchRowsWithSameId().test(shopUnits));
-    LOGGER.info("Проверка 2 " + checkIdsUnique().test(shopUnits));
-    LOGGER.info("Проверка 3 " + checkParentType().test(shopUnits));
-    LOGGER.info("Проверка 4 " + checkCategoryPrice().test(shopUnits));
-    LOGGER.info("Проверка 5 " + checkOfferPrice().test(shopUnits));
-    LOGGER.info("Проверка 6 " + checkDateFormat().test(shopUnits));
-    LOGGER.info("Проверка 7 " + checkUUIDFormat().test(shopUnits));
-    LOGGER.info("Проверка 8 " + checkParentExists().test(shopUnits));
-
-    ValidationResult<Collection<ShopUnit>> result = new ValidationResult<>(shopUnits);
-    if (!checkCorrect().test(shopUnits)) {
+    ValidationResult<Collection<ShopUnit>> result = new ValidationResult<>(request);
+    if (!checkCorrect().test(request)) {
       result.addError(ErrorType.VALIDATION_FAILED_ERROR.getError());
     }
 
@@ -155,7 +140,8 @@ public class ShopUnitValidationService {
    * @return true если валидно
    */
   private Predicate<Collection<ShopUnit>> checkIdsUnique() {
-    return shopUnits -> shopUnits.stream().distinct().count() == shopUnits.size();
+    return shopUnits ->
+        shopUnits.stream().map(ShopUnit::getId).distinct().count() == shopUnits.size();
   }
 
   /**
@@ -198,6 +184,11 @@ public class ShopUnitValidationService {
         });
   }
 
+  /**
+   * Проверка, что родитель с таким id существует
+   *
+   * @return true если валидно
+   */
   private Predicate<Collection<ShopUnit>> checkParentExists() {
     return shopUnits -> {
       Map<String, ShopUnit> shopUnitsById = shopUnits.stream().collect(Collectors

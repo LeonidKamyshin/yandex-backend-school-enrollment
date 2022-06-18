@@ -3,6 +3,7 @@ package com.yandex.enrollment.api.model.shop;
 import java.time.LocalDateTime;
 import java.util.List;
 import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,6 +18,7 @@ public class ShopUnitImportRequest {
 
   @Valid
   @NotNull
+  @NotEmpty
   private List<ShopUnitImport> items;
 
   @NotNull

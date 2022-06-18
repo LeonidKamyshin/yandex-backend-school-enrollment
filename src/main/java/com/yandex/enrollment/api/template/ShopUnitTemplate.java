@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,20 @@ public class ShopUnitTemplate {
       ShopUnitRepository repository) {
     this.template = template;
     this.repository = repository;
+  }
+
+  public void bulkUpsert(Collection<@NotNull ShopUnit> shopUnits) {
+    List<String> ids = shopUnits.stream().map(ShopUnit::getId).toList();
+    HashSet<String> updateIds = repository.findExistingIds(ids).stream()
+        .map(ShopUnit::getId).collect(Collectors.toCollection(HashSet::new));
+    List<ShopUnit> insertShopUnits = shopUnits.stream()
+        .filter(shopUnit -> !updateIds.contains(shopUnit.getId())).toList();
+
+    List<ShopUnit> updateShopUnits = shopUnits.stream()
+        .filter(shopUnit -> updateIds.contains(shopUnit.getId())).toList();
+
+    bulkInsert(insertShopUnits);
+    bulkUpdate(updateShopUnits);
   }
 
   public void bulkUpdate(Collection<@NotNull ShopUnit> shopUnits) {

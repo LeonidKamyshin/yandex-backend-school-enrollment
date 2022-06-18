@@ -47,24 +47,14 @@ public class ShopUnitService {
 
   //  @Transactional
   public Optional<Error> importShopUnit(ShopUnitImportRequest request) {
+    Collection<ShopUnit> innerRequest = converterService.convertShopUnitImportRequest(request);
+
     ValidationResult<Collection<ShopUnit>> validationResult =
-        validationService.validateShopUnitImportRequest(request);
+        validationService.validateImportRequest(innerRequest);
+
     if (!validationResult.hasErrors()) {
       Collection<ShopUnit> shopUnits = validationResult.getResult();
-      List<String> ids = shopUnits.stream().map(ShopUnit::getId).toList();
-      HashSet<String> updateIds = repository.findExistingIds(ids).stream()
-          .map(ShopUnit::getId).collect(Collectors.toCollection(HashSet::new));
-      List<ShopUnit> insertShopUnits = shopUnits.stream()
-          .filter(shopUnit -> !updateIds.contains(shopUnit.getId())).toList();
-
-      List<ShopUnit> updateShopUnits = shopUnits.stream()
-          .filter(shopUnit -> updateIds.contains(shopUnit.getId())).toList();
-
-      LOGGER.debug("Добыл id на инсерт: " + insertShopUnits);
-      LOGGER.debug("Добыл id на апдейт: " + updateShopUnits);
-
-      template.bulkInsert(insertShopUnits);
-      template.bulkUpdate(updateShopUnits);
+      template.bulkUpsert(shopUnits);
     }
 
     return Optional.ofNullable(validationResult.getError());
