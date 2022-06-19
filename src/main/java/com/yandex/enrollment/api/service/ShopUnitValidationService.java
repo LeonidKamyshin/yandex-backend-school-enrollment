@@ -82,7 +82,7 @@ public class ShopUnitValidationService {
     return shopUnits -> {
       List<String> ids = shopUnits.stream().map(ShopUnit::getId)
           .filter(Objects::nonNull).toList();
-      Map<String, ShopUnitType> repoShopUnitTypeById = repository.findAllWithoutChildrenIdByIdIn(
+      Map<String, ShopUnitType> repoShopUnitTypeById = repository.findWithoutChildrenAllByIdIn(
               ids)
           .stream().collect(Collectors.toMap(ShopUnit::getId, ShopUnit::getType));
 
@@ -178,7 +178,7 @@ public class ShopUnitValidationService {
             UUID.fromString(shopUnit.getId());
             return false;
           } catch (IllegalArgumentException e) {
-            LOGGER.info("Incorrect date in ShopUnitImportRequest");
+            LOGGER.info("Incorrect uuid: " + shopUnit.getId());
             return true;
           }
         });

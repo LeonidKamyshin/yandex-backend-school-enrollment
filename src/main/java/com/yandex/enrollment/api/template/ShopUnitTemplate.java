@@ -2,15 +2,15 @@ package com.yandex.enrollment.api.template;
 
 import com.yandex.enrollment.api.controller.ShopUnitController;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
+import com.yandex.enrollment.api.model.shop.ShopUnitType;
 import com.yandex.enrollment.api.repository.ShopUnitRepository;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
 import org.apache.logging.log4j.LogManager;
@@ -49,200 +49,262 @@ public class ShopUnitTemplate {
     List<ShopUnit> updateShopUnits = shopUnits.stream()
         .filter(shopUnit -> updateIds.contains(shopUnit.getId())).toList();
 
-    bulkInsert(insertShopUnits);
-    bulkUpdate(updateShopUnits);
+    Collection<ShopUnit> oldShopUnits = repository
+        .findWithoutChildrenAllByIdIn(updateShopUnits.stream().map(ShopUnit::getId).toList());
+    bulkInsert(insertShopUnits, shopUnits); // Верно
+    bulkUpdate(updateShopUnits, oldShopUnits);
   }
 
-  public void bulkUpdate(Collection<@NotNull ShopUnit> shopUnits) {
-    if (shopUnits.size() == 0) {
-      return;
-    }
-
-    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
-
-    shopUnits.forEach(shopUnit -> {
-      Query query = new Query().addCriteria(Criteria.where("id").is(shopUnit.getId()));
-      Update update = new Update()
-          .addToSet("children").each(shopUnit.getChildren().stream().map(ShopUnit::getId).toArray())
-          .set("name", shopUnit.getName())
-          .set("parentId", shopUnit.getParentId())
-          .set("price", shopUnit.getPrice())
-          .set("date", shopUnit.getDate());
-      bulkOps.updateOne(query, update);
-    });
-
-    Map<String, ShopUnit> repositoryPrice = repository.findAllWithoutChildrenIdByIdIn(
-            shopUnits.stream()
-                .map(ShopUnit::getId).toList()).stream()
-        .collect(Collectors.toMap(ShopUnit::getId, x -> x));
-
-    List<ShopUnit> priceDif = shopUnits.stream().filter(shopUnit -> shopUnit.getPrice() != null)
-        .map(shopUnit -> ShopUnit.builder()
-        .date(shopUnit.getDate())
-        .price(Objects.requireNonNullElse(shopUnit.getPrice(), 0L)
-            - Objects.requireNonNullElse(repositoryPrice.get(shopUnit.getId()).getPrice(), 0L))
-        .parentId(shopUnit.getParentId())
-        .build()).toList();
-
-    bulkIncPriceWithUpdate(priceDif);
-    bulkOps.execute();
-    bulkUpdateChild(shopUnits);
-  }
-
-  private void bulkUpdateChild(Collection<@NotNull ShopUnit> shopUnits) {
-    if (shopUnits.size() == 0) {
+  /**
+   * Вставляет элементы, обновляет цену предков, обновляет дату
+   *
+   * @param insertShopUnits Элементы для вставки
+   */
+  private void bulkInsert(Collection<@NotNull ShopUnit> insertShopUnits,
+      Collection<@NotNull ShopUnit> upsertShopUnits) {
+    if (insertShopUnits.size() == 0) {
       return;
     }
 
     Map<String, ShopUnit> shopUnitsById =
-        shopUnits.stream().collect(Collectors.toMap(ShopUnit::getId, shopUnit -> shopUnit));
-    HashMap<String, ShopUnit> pullChildRequest = new HashMap<>();
-    HashMap<String, ShopUnit> pushChildRequest = new HashMap<>();
-    Collection<ShopUnit> repositoryShopUnits =
-        repository.findAllWithoutChildrenIdByIdIn(shopUnits.stream().map(ShopUnit::getId).toList());
+        upsertShopUnits.stream().collect(Collectors.toMap(ShopUnit::getId, shopUnit -> shopUnit));
 
-    repositoryShopUnits.forEach(repositoryShopUnit -> {
-      ShopUnit updateShopUnit = shopUnitsById.get(repositoryShopUnit.getId());
-      if (!Objects.equals(updateShopUnit.getParentId(), repositoryShopUnit.getParentId())) {
-        pullChildRequest.putIfAbsent(repositoryShopUnit.getParentId(), ShopUnit.builder()
-            .id(repositoryShopUnit.getParentId()).children(new ArrayList<>()).build());
-        ShopUnit pullShopUnit = ShopUnit.builder()
-            .id(repositoryShopUnit.getId())
-            .date(repositoryShopUnit.getDate())
-            .build();
-        pullChildRequest.get(repositoryShopUnit.getParentId())
-            .addChild(pullShopUnit);
-
-        pushChildRequest.putIfAbsent(updateShopUnit.getParentId(), ShopUnit.builder()
-            .id(updateShopUnit.getParentId()).children(new ArrayList<>()).build());
-        ShopUnit pushShopUnit = ShopUnit.builder()
-            .id(updateShopUnit.getId())
-            .date(updateShopUnit.getDate())
-            .build();
-        pushChildRequest.get(updateShopUnit.getParentId())
-            .addChild(pushShopUnit);
-      }
-    });
-
-    bulkPullChild(pullChildRequest.values());
-
-    bulkPushChild(pushChildRequest.values());
-  }
-
-  private void bulkPushChild(Collection<@NotNull ShopUnit> shopUnits) {
-    if (shopUnits.size() == 0) {
-      return;
-    }
-
-    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
-
-    shopUnits.forEach(shopUnit -> {
-      Query query = new Query().addCriteria(Criteria.where("id").is(shopUnit.getId()));
-      Update update = new Update()
-          .push("children").each(shopUnit.getChildren().stream().map(ShopUnit::getId).toArray())
-          .set("date", shopUnit.getDate());
-      bulkOps.updateOne(query, update);
-    });
-
-    bulkOps.execute();
-  }
-
-  private void bulkPullChild(Collection<@NotNull ShopUnit> shopUnits) {
-    if (shopUnits.size() == 0) {
-      return;
-    }
-
-    List<ShopUnit> priceDif = shopUnits.stream().map(shopUnit -> ShopUnit.builder()
-        .date(shopUnit.getDate())
-        .price(-shopUnit.getPrice())
-        .parentId(shopUnit.getParentId())
-        .build()).toList();
-    bulkIncPriceWithUpdate(priceDif);
-
-    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
-    shopUnits.forEach(shopUnit -> {
-      Query query = new Query().addCriteria(Criteria.where("id").is(shopUnit.getId()));
-      Update update = new Update()
-          .pullAll("children", shopUnit.getChildren().stream().map(ShopUnit::getId).toArray())
-          .set("date", shopUnit.getDate());
-      bulkOps.updateOne(query, update);
-    });
-    bulkOps.execute();
-  }
-
-  public void bulkIncPriceWithInsert(Collection<@NotNull ShopUnit> shopUnits) {
-    bulkIncPrice(shopUnits, true);
-  }
-
-  public void bulkIncPriceWithUpdate(Collection<@NotNull ShopUnit> shopUnits) {
-    bulkIncPrice(shopUnits, false);
-  }
-
-  private void bulkIncPrice(Collection<@NotNull ShopUnit> shopUnits, boolean insert) {
-    if (shopUnits.size() == 0) {
-      return;
-    }
-
-    shopUnits.forEach(shopUnit -> {
-      if (!Objects.isNull(shopUnit.getPrice())) {
-        BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
-        ShopUnit curShopUnit = shopUnit;
-        while (!Objects.isNull(curShopUnit.getParentId())) {
-          List<ShopUnit> parent = repository.findAllWithoutChildrenIdByIdIn(
-              Collections.singleton(curShopUnit.getParentId())).stream().toList();
-          curShopUnit = parent.get(0);
-          Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));
-          Update update = new Update().set("date", shopUnit.getDate());
-          if (Objects.isNull(curShopUnit.getPrice())) {
-            update.set("truePrice", shopUnit.getPrice());
-          } else {
-            update.inc("truePrice", shopUnit.getPrice());
-          }
-
-          curShopUnit.setTruePrice(curShopUnit.getTruePrice() + shopUnit.getTruePrice());
-
-          if (insert) {
-            update.inc("unitsCount", shopUnit.getUnitsCount());
-            curShopUnit.setUnitsCount(curShopUnit.getUnitsCount() + shopUnit.getUnitsCount());
-          }
-          update.set("price", curShopUnit.getTruePrice() / curShopUnit.getUnitsCount());
-          bulkOps.updateOne(query, update);
-        }
-        try {
-          bulkOps.execute();
-        } catch (IllegalArgumentException ignored) {
-        }
-      }
-    });
-  }
-
-  public void bulkInsert(Collection<@NotNull ShopUnit> shopUnits) {
-    if (shopUnits.size() == 0) {
-      return;
-    }
-
-    Map<String, ShopUnit> shopUnitsById =
-        shopUnits.stream().collect(Collectors.toMap(ShopUnit::getId, shopUnit -> shopUnit));
-
-    HashMap<String, ShopUnit> pushChildRequest = new HashMap<>();
-    shopUnits.forEach(shopUnit -> {
+    insertShopUnits.forEach(shopUnit -> {
       if (!shopUnitsById.containsKey(shopUnit.getParentId())) {
-        pushChildRequest.putIfAbsent(shopUnit.getParentId(),
-            ShopUnit.builder().id(shopUnit.getParentId()).children(new ArrayList<>()).build());
-        ShopUnit pushShopUnit = ShopUnit.builder()
-            .id(shopUnit.getId())
-            .date(shopUnit.getDate())
-            .build();
-        pushChildRequest.get(shopUnit.getParentId())
-            .addChild(pushShopUnit);
+        pushChild(shopUnit, shopUnit.getParentId());
       }
     });
 
-    LOGGER.debug("Собираюсь запушить детей: " + pushChildRequest.values());
-    bulkPushChild(pushChildRequest.values());
+    repository.insert(insertShopUnits);
+    insertShopUnits.stream().filter(shopUnit -> shopUnit.getType() == ShopUnitType.OFFER)
+        .forEach(shopUnit -> incPrice(shopUnit.getParentId(), shopUnit, true, true));
+  }
 
-    LOGGER.debug("Вставляю юниты: " + shopUnits);
-    repository.insert(shopUnits);
-    bulkIncPriceWithInsert(shopUnits);
+  private void bulkUpdate(Collection<@NotNull ShopUnit> shopUnits,
+      Collection<@NotNull ShopUnit> oldShopUnits) {
+    if (shopUnits.size() == 0) {
+      return;
+    }
+
+    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
+
+    shopUnits.forEach(shopUnit -> {
+      Query query = new Query().addCriteria(Criteria.where("id").is(shopUnit.getId()));
+      Update update = new Update()
+          .set("name", shopUnit.getName());
+      bulkOps.updateOne(query, update);
+    });
+
+    try {
+      bulkOps.execute();
+    } catch (IllegalArgumentException ignored) {
+    }
+
+    Map<String, ShopUnit> oldShopUnitsById =
+        oldShopUnits.stream().collect(Collectors.toMap(ShopUnit::getId, shopUnit -> shopUnit));
+
+    shopUnits.stream().filter(shopUnit -> shopUnit.getType() == ShopUnitType.OFFER)
+        .forEach(shopUnit -> {
+          ShopUnit curShopUnit = ShopUnit.builder().id(shopUnit.getId())
+              .truePrice(
+                  shopUnit.getTruePrice() - oldShopUnitsById.get(shopUnit.getId()).getTruePrice())
+              .build();
+          incPrice(curShopUnit.getId(), curShopUnit, false, true);
+        });
+
+    shopUnits.forEach(shopUnit -> moveChild(shopUnit,
+        oldShopUnitsById.get(shopUnit.getId()).getParentId(), shopUnit.getParentId()));
+  }
+
+  private void moveChild(ShopUnit child, String prevParentId, String newParentId) {
+    if (Objects.equals(prevParentId, newParentId)) {
+      return;
+    }
+    if (child.getType() == ShopUnitType.CATEGORY) {
+      ShopUnit repositoryChild = repository.findWithoutChildrenIdById(child.getId());
+      child.setTruePrice(repositoryChild.getTruePrice());
+      child.setUnitsCount(repositoryChild.getUnitsCount());
+    }
+    LOGGER.info("Пушу ребёнка: " + child);
+    LOGGER.info("Был родитель: " + prevParentId);
+    LOGGER.info("Стал родитель: " + newParentId);
+    subPrice(prevParentId, child, true, true);
+    pullChild(child, prevParentId);
+
+    pushChild(child, newParentId);
+    incPrice(newParentId, child, true, true);
+  }
+
+  /**
+   * Массово добавляет детей (Не обязательно одной вершине). Сами обьекты не добавляются,
+   * добавляется только связь родитель <-> сын Дети добавляются родителям с id = parentId.
+   * Поддерживает цену, дату.
+   */
+  private void pushChild(ShopUnit child, @NotNull String parentId) {
+    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
+
+    LOGGER.info("Ставлю ребёнка: " + child);
+    LOGGER.info("Родитель ребёнка: " + parentId);
+    Query query = new Query().addCriteria(Criteria.where("id").is(parentId));
+    Update update = new Update()
+        .addToSet("children", child.getId())
+        .set("date", child.getDate());
+    bulkOps.updateOne(query, update);
+
+    Query queryChild = new Query().addCriteria(Criteria.where("id").is(child.getId()));
+    Update updateChild = new Update()
+        .set("parentId", child.getParentId())
+        .set("date", child.getDate());
+    bulkOps.updateOne(queryChild, updateChild);
+
+    try {
+      bulkOps.execute();
+    } catch (IllegalArgumentException ignored) {
+    }
+  }
+
+  /**
+   * Делает массовое удаление детей (Не обязательно одной вершины) Сами обьекты не удаляются,
+   * удаляется только связь родитель <-> сын Дети удаляются у родителей с id = parentId.
+   * Поддерживает цену, дату.
+   */
+  private void pullChild(ShopUnit child, @NotNull String parentId) {
+    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
+
+    Query query = new Query().addCriteria(Criteria.where("id").is(parentId));
+    Update update = new Update()
+        .pull("children", child.getId())
+        .set("date", child.getDate());
+    bulkOps.updateOne(query, update);
+    try {
+      bulkOps.execute();
+    } catch (IllegalArgumentException ignored) {
+    }
+  }
+
+  /**
+   * Прибавляет цену юнита и всех его предков Используется чтобы обновить цену при
+   * добавлении/обновлении вершины из дерева, чтобы корректно поддерживать Значение цены, число
+   * элементов в поддереве и дату обновления
+   *
+   * @param changeUnitsCount Вычитать ли число офферов, которые были у вычитаемого юнита
+   * @param updateDate       Обновлять ли дату
+   */
+  @SuppressWarnings("SameParameterValue")
+  private void incPrice(String id, ShopUnit value, boolean changeUnitsCount, boolean updateDate) {
+    if (Objects.isNull(value.getTruePrice())) {
+      return;
+    }
+
+    LOGGER.info("Начинаю увеличивать цену по value: " + value);
+    LOGGER.info("Начиная с Id: " + id);
+    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
+    ShopUnit curShopUnit;
+    while (id != null) {
+      curShopUnit = repository.findWithoutChildrenIdById(id);
+      id = curShopUnit.getParentId();
+      LOGGER.info("Текущий id: " + curShopUnit.getId());
+      Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));
+      Update update = new Update();
+      if (updateDate) {
+        update.set("date", value.getDate());
+      }
+
+      LOGGER.info("Увеличиваю truePrice на: " + value.getTruePrice());
+      update.inc("truePrice", value.getTruePrice());
+      curShopUnit.setTruePrice(curShopUnit.getTruePrice() + value.getTruePrice());
+
+      LOGGER.info("Поставил локально truePrice на: " + curShopUnit.getTruePrice());
+
+      if (changeUnitsCount) {
+        update.inc("unitsCount", value.getUnitsCount());
+        curShopUnit.setUnitsCount(curShopUnit.getUnitsCount() + value.getUnitsCount());
+      }
+      if (curShopUnit.getUnitsCount() == 0) {
+        update.set("price", null);
+      } else {
+        update.set("price", curShopUnit.getTruePrice() / curShopUnit.getUnitsCount());
+      }
+      bulkOps.updateOne(query, update);
+    }
+    try {
+      bulkOps.execute();
+    } catch (IllegalArgumentException ignored) {
+    }
+  }
+
+  /**
+   * Вычитает цену из юнита и всех его предков Используется чтобы обновить цену при
+   * удалении/обновлении вершины из дерева, чтобы корректно поддерживать Значение цены, число
+   * элементов в поддереве и дату обновления
+   *
+   * @param changeUnitsCount Вычитать ли число офферов, которые были у вычитаемого юнита
+   * @param updateDate       оОновлять ли дату
+   */
+  @SuppressWarnings("SameParameterValue")
+  private void subPrice(String id, ShopUnit value, boolean changeUnitsCount, boolean updateDate) {
+    if (Objects.isNull(value.getTruePrice())) {
+      return;
+    }
+
+    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
+    ShopUnit curShopUnit;
+    while (id != null) {
+      curShopUnit = repository.findWithoutChildrenIdById(id);
+      id = curShopUnit.getParentId();
+
+      Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));
+      Update update = new Update();
+      if (updateDate) {
+        update.set("date", value.getDate());
+      }
+
+      update.inc("truePrice", -value.getTruePrice());
+      curShopUnit.setTruePrice(curShopUnit.getTruePrice() - value.getTruePrice());
+
+      if (changeUnitsCount) {
+        update.inc("unitsCount", -value.getUnitsCount());
+        curShopUnit.setUnitsCount(curShopUnit.getUnitsCount() - value.getUnitsCount());
+      }
+
+      if (curShopUnit.getUnitsCount() == 0) {
+        update.set("price", null);
+      } else {
+        update.set("price", curShopUnit.getTruePrice() / curShopUnit.getUnitsCount());
+      }
+      bulkOps.updateOne(query, update);
+
+    }
+    try {
+      bulkOps.execute();
+    } catch (IllegalArgumentException ignored) {
+    }
+  }
+
+  /**
+   * Удаляет элемент и всех его детей, обновляет price, дату обновления не меняет.
+   *
+   * @param shopUnit Элемент, который нужно удалить
+   */
+  public void deleteShopUnit(ShopUnit shopUnit) {
+    subPrice(shopUnit.getParentId(), shopUnit, true, false);
+    repository.deleteAllById(getSubtreeIds(shopUnit));
+  }
+
+  /**
+   * @param root Стартовая вершина
+   * @return Возвращает id всех потомков включая себя
+   */
+  private List<String> getSubtreeIds(ShopUnit root) {
+    List<String> ids = new ArrayList<>();
+    Stack<ShopUnit> q = new Stack<>();
+    q.push(root);
+    while (!q.empty()) {
+      ShopUnit cur = q.peek();
+      q.pop();
+      ids.add(cur.getId());
+      cur.getChildren().forEach(q::push);
+    }
+    return ids;
   }
 }

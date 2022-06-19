@@ -17,7 +17,10 @@ public interface ShopUnitRepository extends MongoRepository<ShopUnit, String> {
   Collection<ShopUnit> findExistingIds(Collection<@NotNull String> id);
 
   @Query(value = "{'_id': {$in: ?0}}", fields = "{'children': 0}")
-  Collection<ShopUnit> findAllWithoutChildrenIdByIdIn(Collection<@NotNull String> id);
+  Collection<ShopUnit> findWithoutChildrenAllByIdIn(Collection<@NotNull String> id);
+
+  @Query(value = "{'_id': {$eq: ?0}}", fields = "{'children': 0}")
+  ShopUnit findWithoutChildrenIdById(String id);
 
   @Query(value = "{'type': {$eq: ?0},'date': {$gte: ?1, $lte: ?2}}")
   Collection<ShopUnit> findAllByTypeAndDateInterval(ShopUnitType type, String startDate, String endDate);

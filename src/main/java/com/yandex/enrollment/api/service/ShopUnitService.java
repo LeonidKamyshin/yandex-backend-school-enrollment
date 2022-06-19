@@ -71,25 +71,14 @@ public class ShopUnitService {
   public Optional<Error> deleteShopUnitById(String id) {
     Optional<ShopUnit> root = repository.findById(id);
     if (root.isPresent()) {
-      repository.deleteAllById(getSubtreeIds(root.get()));
+      template.deleteShopUnit(root.get());
       return Optional.empty();
     } else {
       return Optional.ofNullable(ErrorType.ITEM_NOT_FOUND_ERROR.getError());
     }
   }
 
-  private List<String> getSubtreeIds(ShopUnit root) {
-    List<String> ids = new ArrayList<>();
-    Stack<ShopUnit> q = new Stack<>();
-    q.push(root);
-    while (!q.empty()) {
-      ShopUnit cur = q.peek();
-      q.pop();
-      ids.add(cur.getId());
-      cur.getChildren().forEach(q::push);
-    }
-    return ids;
-  }
+
 
   /**
    * Костыль, потому что не смог исправить null -> [] после бд

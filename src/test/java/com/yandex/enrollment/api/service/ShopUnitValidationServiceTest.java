@@ -7,11 +7,8 @@ import static org.mockito.Mockito.when;
 import com.yandex.enrollment.api.model.error.ErrorType;
 import com.yandex.enrollment.api.model.result.ValidationResult;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
-import com.yandex.enrollment.api.model.shop.ShopUnitImport;
-import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
 import com.yandex.enrollment.api.model.shop.ShopUnitType;
 import com.yandex.enrollment.api.repository.ShopUnitRepository;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
@@ -41,7 +38,7 @@ class ShopUnitValidationServiceTest {
   @BeforeEach
   void initService() {
     when(repository.countByIdIn(any())).thenReturn(0L);
-    when(repository.findAllWithoutChildrenIdByIdIn(any())).thenReturn(
+    when(repository.findWithoutChildrenAllByIdIn(any())).thenReturn(
         List.of(ShopUnit.builder().id(REPOSITORY_OFFER_ID).type(ShopUnitType.OFFER).build()));
     validationService = new ShopUnitValidationService(repository);
   }
