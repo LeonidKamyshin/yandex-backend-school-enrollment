@@ -65,10 +65,24 @@ public class ShopUnitController {
 
   @GetMapping(value = "/sales")
   public ShopUnitStatisticResponse getSales(
-      @RequestParam(name = "date", defaultValue = "Ahmed") String date)
+      @RequestParam(name = "date") String date)
       throws ApiException {
     LOGGER.info("Entering api endpoint to get sales by date: " + date);
     ApiResult<ShopUnitStatisticResponse> result = service.getSales(date);
+    if (result.hasErrors()) {
+      throw new ApiException(result.getError());
+    } else {
+      return result.getResult();
+    }
+  }
+
+  @GetMapping(value = "/node/{id}/statistic")
+  public ShopUnitStatisticResponse getSales(@PathVariable("id") String id,
+      @RequestParam(name = "date", required = false) String dateStart,
+      @RequestParam(name = "date", required = false) String dateEnd)
+      throws ApiException {
+    LOGGER.info("Entering api endpoint to get statistic by id: " + id);
+    ApiResult<ShopUnitStatisticResponse> result = service.getStatistic(id, dateStart, dateEnd);
     if (result.hasErrors()) {
       throw new ApiException(result.getError());
     } else {

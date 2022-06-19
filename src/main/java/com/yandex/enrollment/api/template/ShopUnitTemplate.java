@@ -2,14 +2,17 @@ package com.yandex.enrollment.api.template;
 
 import com.yandex.enrollment.api.controller.ShopUnitController;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
+import com.yandex.enrollment.api.model.shop.ShopUnitStatisticsUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitType;
 import com.yandex.enrollment.api.repository.ShopUnitRepository;
+import com.yandex.enrollment.api.repository.ShopUnitStatisticUnitRepository;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
@@ -30,18 +33,26 @@ public class ShopUnitTemplate {
   private static final Logger LOGGER = LogManager.getLogger(ShopUnitController.class);
 
   private final MongoTemplate template;
-  private final ShopUnitRepository repository;
+  private final ShopUnitRepository shopUnitRepository;
+  private final ShopUnitStatisticUnitRepository shopUnitStatisticUnitRepository;
 
   @Autowired
   public ShopUnitTemplate(MongoTemplate template,
-      ShopUnitRepository repository) {
+      ShopUnitRepository shopUnitRepository,
+      ShopUnitStatisticUnitRepository shopUnitStatisticUnitRepository
+  ) {
     this.template = template;
-    this.repository = repository;
+    this.shopUnitRepository = shopUnitRepository;
+    this.shopUnitStatisticUnitRepository = shopUnitStatisticUnitRepository;
   }
 
   public void bulkUpsert(Collection<@NotNull ShopUnit> shopUnits) {
+    if (shopUnits.size() == 0) {
+      return;
+    }
+
     List<String> ids = shopUnits.stream().map(ShopUnit::getId).toList();
-    HashSet<String> updateIds = repository.findExistingIds(ids).stream()
+    HashSet<String> updateIds = shopUnitRepository.findExistingIds(ids).stream()
         .map(ShopUnit::getId).collect(Collectors.toCollection(HashSet::new));
     List<ShopUnit> insertShopUnits = shopUnits.stream()
         .filter(shopUnit -> !updateIds.contains(shopUnit.getId())).toList();
@@ -49,10 +60,15 @@ public class ShopUnitTemplate {
     List<ShopUnit> updateShopUnits = shopUnits.stream()
         .filter(shopUnit -> updateIds.contains(shopUnit.getId())).toList();
 
-    Collection<ShopUnit> oldShopUnits = repository
+    Collection<ShopUnit> oldShopUnits = shopUnitRepository
         .findWithoutChildrenAllByIdIn(updateShopUnits.stream().map(ShopUnit::getId).toList());
-    bulkInsert(insertShopUnits, shopUnits); // Верно
+
+    bulkInsert(insertShopUnits, shopUnits);
     bulkUpdate(updateShopUnits, oldShopUnits);
+
+    String date = shopUnits.stream().findFirst().orElse(ShopUnit.builder().build()).getDate();
+    LOGGER.info("Копирую по дате: " + date);
+    saveStatisticOnDate(getAllPriceChanged(shopUnits), date);
   }
 
   /**
@@ -75,7 +91,7 @@ public class ShopUnitTemplate {
       }
     });
 
-    repository.insert(insertShopUnits);
+    shopUnitRepository.insert(insertShopUnits);
     insertShopUnits.stream().filter(shopUnit -> shopUnit.getType() == ShopUnitType.OFFER)
         .forEach(shopUnit -> incPrice(shopUnit.getParentId(), shopUnit, true, true));
   }
@@ -106,6 +122,7 @@ public class ShopUnitTemplate {
     shopUnits.stream().filter(shopUnit -> shopUnit.getType() == ShopUnitType.OFFER)
         .forEach(shopUnit -> {
           ShopUnit curShopUnit = ShopUnit.builder().id(shopUnit.getId())
+              .date(shopUnit.getDate())
               .truePrice(
                   shopUnit.getTruePrice() - oldShopUnitsById.get(shopUnit.getId()).getTruePrice())
               .build();
@@ -121,7 +138,7 @@ public class ShopUnitTemplate {
       return;
     }
     if (child.getType() == ShopUnitType.CATEGORY) {
-      ShopUnit repositoryChild = repository.findWithoutChildrenIdById(child.getId());
+      ShopUnit repositoryChild = shopUnitRepository.findWithoutChildrenIdById(child.getId());
       child.setTruePrice(repositoryChild.getTruePrice());
       child.setUnitsCount(repositoryChild.getUnitsCount());
     }
@@ -142,7 +159,7 @@ public class ShopUnitTemplate {
    */
   private void pushChild(ShopUnit child, @NotNull String parentId) {
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
-
+    LOGGER.info("!!! Дата для " + child.getId() + " " + child.getDate());
     LOGGER.info("Ставлю ребёнка: " + child);
     LOGGER.info("Родитель ребёнка: " + parentId);
     Query query = new Query().addCriteria(Criteria.where("id").is(parentId));
@@ -171,6 +188,7 @@ public class ShopUnitTemplate {
   private void pullChild(ShopUnit child, @NotNull String parentId) {
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
 
+    LOGGER.info("!!! Дата для " + child.getId() + " " + child.getDate());
     Query query = new Query().addCriteria(Criteria.where("id").is(parentId));
     Update update = new Update()
         .pull("children", child.getId())
@@ -201,7 +219,7 @@ public class ShopUnitTemplate {
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
     ShopUnit curShopUnit;
     while (id != null) {
-      curShopUnit = repository.findWithoutChildrenIdById(id);
+      curShopUnit = shopUnitRepository.findWithoutChildrenIdById(id);
       id = curShopUnit.getParentId();
       LOGGER.info("Текущий id: " + curShopUnit.getId());
       Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));
@@ -250,7 +268,7 @@ public class ShopUnitTemplate {
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
     ShopUnit curShopUnit;
     while (id != null) {
-      curShopUnit = repository.findWithoutChildrenIdById(id);
+      curShopUnit = shopUnitRepository.findWithoutChildrenIdById(id);
       id = curShopUnit.getParentId();
 
       Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));
@@ -288,7 +306,9 @@ public class ShopUnitTemplate {
    */
   public void deleteShopUnit(ShopUnit shopUnit) {
     subPrice(shopUnit.getParentId(), shopUnit, true, false);
-    repository.deleteAllById(getSubtreeIds(shopUnit));
+    List<String> ids = getSubtreeIds(shopUnit);
+    shopUnitRepository.deleteAllById(ids);
+    shopUnitStatisticUnitRepository.deleteAllByIdIn(ids);
   }
 
   /**
@@ -306,5 +326,26 @@ public class ShopUnitTemplate {
       cur.getChildren().forEach(q::push);
     }
     return ids;
+  }
+
+  private Collection<String> getAllPriceChanged(Collection<ShopUnit> shopUnits) {
+    List<String> offers = shopUnits.stream().filter(shopUnit -> shopUnit.getPrice() != null)
+        .map(ShopUnit::getId).toList();
+    Set<String> ids = new HashSet<>();
+    offers.forEach(id -> {
+      String curId = id;
+      while (curId != null) {
+        ids.add(curId);
+        curId = shopUnitRepository.findById(curId).orElse(ShopUnit.builder().build()).getParentId();
+      }
+    });
+    return ids;
+  }
+
+  private void saveStatisticOnDate(Collection<String> ids, String date) {
+    Collection<ShopUnitStatisticsUnit> statisticsUnits = shopUnitRepository
+        .findAllWithoutChildrenByIdInAndDate(ids, date);
+    LOGGER.info("Получил статистики: " + statisticsUnits);
+    shopUnitStatisticUnitRepository.insert(statisticsUnits);
   }
 }

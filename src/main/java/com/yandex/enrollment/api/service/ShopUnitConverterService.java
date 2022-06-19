@@ -6,6 +6,7 @@ import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
 import com.yandex.enrollment.api.model.shop.ShopUnitStatisticResponse;
 import com.yandex.enrollment.api.model.shop.ShopUnitStatisticsUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitType;
+import com.yandex.enrollment.api.utils.DateUtils;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -46,12 +47,4 @@ public class ShopUnitConverterService {
     });
     return shopUnits;
   }
-
-  public ShopUnitStatisticResponse convertShopUnit(Collection<ShopUnit> shopUnits){
-    List<ShopUnitStatisticsUnit> statisticsUnits = shopUnits.stream()
-        .map(r -> modelMapper.map(r, ShopUnitStatisticsUnit.class)).toList();
-    return new ShopUnitStatisticResponse(statisticsUnits);
-  }
-
-
 }

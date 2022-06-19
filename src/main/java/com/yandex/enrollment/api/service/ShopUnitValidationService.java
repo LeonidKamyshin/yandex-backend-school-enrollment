@@ -1,6 +1,8 @@
 package com.yandex.enrollment.api.service;
 
+import com.mongodb.lang.Nullable;
 import com.yandex.enrollment.api.controller.ShopUnitController;
+import com.yandex.enrollment.api.model.error.Error;
 import com.yandex.enrollment.api.model.error.ErrorType;
 import com.yandex.enrollment.api.model.result.ValidationResult;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
@@ -13,6 +15,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +32,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ShopUnitValidationService {
 
-  private static final Logger LOGGER = LogManager.getLogger(ShopUnitController.class);
+  private final static Logger LOGGER = LogManager.getLogger(ShopUnitController.class);
 
   private final ShopUnitRepository repository;
 
@@ -177,7 +180,7 @@ public class ShopUnitValidationService {
             }
             UUID.fromString(shopUnit.getId());
             return false;
-          } catch (IllegalArgumentException e) {
+          } catch (IllegalArgumentException | NullPointerException e) {
             LOGGER.info("Incorrect uuid: " + shopUnit.getId());
             return true;
           }
@@ -202,13 +205,16 @@ public class ShopUnitValidationService {
     };
   }
 
-  public ValidationResult<String> validateSalesDate(String date) {
-    if (checkDateFormat().test(Collections.singleton(ShopUnit.builder().date(date).build()))) {
-      String dateStart = DateUtils.dateToString(DateUtils.stringToDate(date)
-          .minus(1, ChronoUnit.DAYS));
-      return new ValidationResult<>(dateStart);
-    } else {
+  public ValidationResult<String> validateDateFormat(String date){
+    try {
+      Instant.from(DateTimeFormatter.ISO_INSTANT.parse(date));
+      return new ValidationResult<>(DateUtils.unifyDate(date));
+    } catch (IllegalArgumentException e) {
+      LOGGER.info("Incorrect date: " + date);
       return new ValidationResult<>(ErrorType.VALIDATION_FAILED_ERROR.getError());
+    }
+    catch (NullPointerException e){
+      return new ValidationResult<>(date);
     }
   }
 }
