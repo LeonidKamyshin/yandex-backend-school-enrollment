@@ -27,7 +27,6 @@ public interface ShopUnitRepository extends MongoRepository<ShopUnit, String> {
   Collection<ShopUnitStatisticsUnit> findAllByTypeAndDateInterval(ShopUnitType type,
       String startDate, String endDate);
 
-  @Query(value = "{'_id': {$in:  ?0}, 'date': {$eq: ?1}}", fields = "{'children': 0}")
-  Collection<ShopUnitStatisticsUnit> findAllWithoutChildrenByIdInAndDate(Collection<String> ids,
-      String date);
+  @Query(value = "{'date': {$eq: ?0}}", fields = "{'children': 0}")
+  Collection<ShopUnitStatisticsUnit> findAllWithoutChildrenByDate(String date);
 }

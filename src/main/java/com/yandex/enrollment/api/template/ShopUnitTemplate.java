@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
@@ -68,7 +67,7 @@ public class ShopUnitTemplate {
 
     String date = shopUnits.stream().findFirst().orElse(ShopUnit.builder().build()).getDate();
     LOGGER.info("Копирую по дате: " + date);
-    saveStatisticOnDate(getAllPriceChanged(shopUnits), date);
+    saveStatisticOnDate(date);
   }
 
   /**
@@ -328,23 +327,9 @@ public class ShopUnitTemplate {
     return ids;
   }
 
-  private Collection<String> getAllPriceChanged(Collection<ShopUnit> shopUnits) {
-    List<String> offers = shopUnits.stream().filter(shopUnit -> shopUnit.getPrice() != null)
-        .map(ShopUnit::getId).toList();
-    Set<String> ids = new HashSet<>();
-    offers.forEach(id -> {
-      String curId = id;
-      while (curId != null) {
-        ids.add(curId);
-        curId = shopUnitRepository.findById(curId).orElse(ShopUnit.builder().build()).getParentId();
-      }
-    });
-    return ids;
-  }
-
-  private void saveStatisticOnDate(Collection<String> ids, String date) {
+  private void saveStatisticOnDate(String date) {
     Collection<ShopUnitStatisticsUnit> statisticsUnits = shopUnitRepository
-        .findAllWithoutChildrenByIdInAndDate(ids, date);
+        .findAllWithoutChildrenByDate(date);
     LOGGER.info("Получил статистики: " + statisticsUnits);
     shopUnitStatisticUnitRepository.insert(statisticsUnits);
   }
