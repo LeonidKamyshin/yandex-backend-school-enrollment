@@ -10,6 +10,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Объект, описывающий запрос на добавление товаров / категорий
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor

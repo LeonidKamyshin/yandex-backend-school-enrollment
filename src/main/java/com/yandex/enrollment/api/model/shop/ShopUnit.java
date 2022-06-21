@@ -18,6 +18,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Reference;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+/**
+ * Объект, описывающий товар / категорию
+ */
 @Data
 @Document(collection = "shop_units")
 @Builder(toBuilder = true)

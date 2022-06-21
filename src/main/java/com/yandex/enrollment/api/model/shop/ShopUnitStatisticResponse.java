@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Объект, описывающий ответ API на запрос получения статистики
+ */
 @Data
 @Builder
 @NoArgsConstructor

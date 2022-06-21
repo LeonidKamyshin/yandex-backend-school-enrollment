@@ -13,6 +13,9 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
+/**
+ * Шаблон выполнения запросов в коллекции {@link DatabaseSequence}
+ */
 @Component
 public class DatabaseSequenceTemplate {
 
@@ -25,6 +28,12 @@ public class DatabaseSequenceTemplate {
     this.template = template;
   }
 
+  /**
+   * Инкрементирует документ с заданным {@link DatabaseSequence#id}
+   *
+   * @param seqName Id документа
+   * @return Текущий {@link DatabaseSequence#seq}
+   */
   @SuppressWarnings("ConstantConditions")
   public String increment(String seqName) {
     DatabaseSequence counter = template.findAndModify(

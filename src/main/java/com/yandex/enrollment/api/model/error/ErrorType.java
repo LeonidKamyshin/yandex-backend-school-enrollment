@@ -1,5 +1,8 @@
 package com.yandex.enrollment.api.model.error;
 
+/**
+ * Виды ошибок API
+ */
 public enum ErrorType {
   VALIDATION_FAILED_ERROR(new Error(400, "Validation failed")),
   ITEM_NOT_FOUND_ERROR(new Error(404, "Item not found"));

@@ -1,8 +1,6 @@
 package com.yandex.enrollment.api.service;
 
-import com.mongodb.lang.Nullable;
 import com.yandex.enrollment.api.controller.ShopUnitController;
-import com.yandex.enrollment.api.model.error.Error;
 import com.yandex.enrollment.api.model.error.ErrorType;
 import com.yandex.enrollment.api.model.result.ValidationResult;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
@@ -12,10 +10,7 @@ import com.yandex.enrollment.api.utils.DateUtils;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +24,9 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * Сервис для валидации внутренних запросов
+ */
 @Service
 public class ShopUnitValidationService {
 
@@ -41,6 +39,12 @@ public class ShopUnitValidationService {
     this.repository = repository;
   }
 
+  /**
+   * Валидирует запрос на добавление товаров / категорий
+   *
+   * @param request Запрос
+   * @return {@link ValidationResult} - провалидированный запрос
+   */
   public ValidationResult<Collection<ShopUnit>> validateImportRequest(
       Collection<ShopUnit> request) {
     LOGGER.info("Проверка 1 " + checkTypeMatchRowsWithSameId().test(request));
@@ -205,15 +209,20 @@ public class ShopUnitValidationService {
     };
   }
 
-  public ValidationResult<String> validateDateFormat(String date){
+  /**
+   * Валидирует дату на соответствие формату ISO 8601
+   *
+   * @param date Дата, которую нужно проверить
+   * @return {@link ValidationResult} провалидированную дату
+   */
+  public ValidationResult<String> validateDateFormat(String date) {
     try {
       Instant.from(DateTimeFormatter.ISO_INSTANT.parse(date));
       return new ValidationResult<>(DateUtils.unifyDate(date));
     } catch (IllegalArgumentException e) {
       LOGGER.info("Incorrect date: " + date);
       return new ValidationResult<>(ErrorType.VALIDATION_FAILED_ERROR.getError());
-    }
-    catch (NullPointerException e){
+    } catch (NullPointerException e) {
       return new ValidationResult<>(date);
     }
   }

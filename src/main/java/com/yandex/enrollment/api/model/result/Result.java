@@ -4,6 +4,13 @@ import com.yandex.enrollment.api.model.error.Error;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Базовый класс, описывающий объект во время исполнения API
+ * result - сам объект
+ * errors - ошибки, возникшие во время работы API, связанные с этим объектом
+ *
+ * @param <T> Класс объекта
+ */
 public abstract class Result<T> {
 
   private final T result;

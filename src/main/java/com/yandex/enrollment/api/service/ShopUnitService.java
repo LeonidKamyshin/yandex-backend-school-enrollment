@@ -24,6 +24,9 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * Сервис для выполнения запросов API
+ */
 @Service
 public class ShopUnitService {
 
@@ -48,39 +51,18 @@ public class ShopUnitService {
     this.template = template;
   }
 
-  //  @Transactional
-  public Optional<Error> importShopUnit(ShopUnitImportRequest request) {
-    Collection<ShopUnit> innerRequest = converterService.convertShopUnitImportRequest(request);
-
-    ValidationResult<Collection<ShopUnit>> validationResult =
-        validationService.validateImportRequest(innerRequest);
-
-    if (!validationResult.hasErrors()) {
-      Collection<ShopUnit> shopUnits = validationResult.getResult();
-      template.bulkUpsert(shopUnits);
-    }
-
-    return Optional.ofNullable(validationResult.getError());
-  }
-
+  /**
+   * Получает {@link ShopUnit} по заданному id
+   *
+   * @param id Заданный id
+   * @return {@link ApiResult<ShopUnit>} - результат запроса
+   */
   public ApiResult<ShopUnit> getShopUnitById(String id) {
     Optional<ShopUnit> result = shopUnitRepository.findById(id);
     result.ifPresent(this::resetNulls);
     return result.map(ApiResult::new)
         .orElseGet(() -> new ApiResult<>(ErrorType.ITEM_NOT_FOUND_ERROR.getError()));
   }
-
-  //  @Transactional
-  public Optional<Error> deleteShopUnitById(String id) {
-    Optional<ShopUnit> root = shopUnitRepository.findById(id);
-    if (root.isPresent()) {
-      template.deleteShopUnit(root.get());
-      return Optional.empty();
-    } else {
-      return Optional.ofNullable(ErrorType.ITEM_NOT_FOUND_ERROR.getError());
-    }
-  }
-
 
   /**
    * Костыль, потому что не смог исправить null -> [] после бд
@@ -101,6 +83,12 @@ public class ShopUnitService {
     }
   }
 
+  /**
+   * Получает список товаров, цена которых была обновлена за последние 24 часа от заданной даты
+   *
+   * @param date Заданная дата
+   * @return {@link ApiResult<ShopUnitStatisticResponse>} - результат запроса
+   */
   public ApiResult<ShopUnitStatisticResponse> getSales(String date) {
     ValidationResult<String> validationResult = validationService.validateDateFormat(date);
     if (validationResult.hasErrors()) {
@@ -114,6 +102,14 @@ public class ShopUnitService {
     }
   }
 
+  /**
+   * Получает статистику {@link ShopUnit} с заданным id за заданный интервал
+   *
+   * @param id        Заданный id
+   * @param dateStart Начало интервала date
+   * @param dateEnd   Конец интверала date
+   * @return {@link ApiResult<ShopUnitStatisticResponse>} - полученную статистику
+   */
   public ApiResult<ShopUnitStatisticResponse> getStatistic(String id, String dateStart,
       String dateEnd) {
     ValidationResult<String> dateStartValidationResult =
@@ -130,8 +126,46 @@ public class ShopUnitService {
 
       List<ShopUnitStatisticsUnit> shopUnits =
           (List<ShopUnitStatisticsUnit>) shopUnitStatisticUnitRepository
-              .findByTypeAndDateInterval(id, dateStart, dateEnd);
+              .findByIdAndDateInterval(id, dateStart, dateEnd);
       return new ApiResult<>(ShopUnitStatisticResponse.builder().items(shopUnits).build());
     }
+  }
+
+  /**
+   * Удаляет {@link ShopUnit} по заданному id
+   *
+   * @param id Заданный id
+   * @return Ошибку, если возникла
+   */
+  //  @Transactional
+  public Optional<Error> deleteShopUnitById(String id) {
+    Optional<ShopUnit> root = shopUnitRepository.findById(id);
+    if (root.isPresent()) {
+      template.deleteShopUnit(root.get());
+      return Optional.empty();
+    } else {
+      return Optional.ofNullable(ErrorType.ITEM_NOT_FOUND_ERROR.getError());
+    }
+  }
+
+  /**
+   * Импортирует объекты
+   *
+   * @param request Реквест на импорт
+   * @return Ошибку, если возникла
+   */
+  //  @Transactional
+  public Optional<Error> importShopUnit(ShopUnitImportRequest request) {
+    Collection<ShopUnit> innerRequest = converterService.convertShopUnitImportRequest(request);
+
+    ValidationResult<Collection<ShopUnit>> validationResult =
+        validationService.validateImportRequest(innerRequest);
+
+    if (!validationResult.hasErrors()) {
+      Collection<ShopUnit> shopUnits = validationResult.getResult();
+      template.bulkUpsert(shopUnits);
+    }
+
+    return Optional.ofNullable(validationResult.getError());
   }
 }

@@ -7,6 +7,9 @@ import org.springframework.data.mongodb.core.mapping.event.AbstractMongoEventLis
 import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.stereotype.Component;
 
+/**
+ * Класс, который реализует автоинкрементируемое поле id
+ */
 @Component
 public class ShopUnitStatisticsUnitModelListener extends
     AbstractMongoEventListener<ShopUnitStatisticsUnit> {

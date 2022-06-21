@@ -4,6 +4,9 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+/**
+ * Документ, в котором хранятся счётчики id, используемые для автоинкрементации id
+ */
 @Data
 @Document(collection = "database_sequences")
 public class DatabaseSequence {

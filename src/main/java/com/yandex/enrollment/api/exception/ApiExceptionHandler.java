@@ -9,6 +9,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Класс, который добавляет описание ошибки в response body
+ */
 @Log4j2
 @RestControllerAdvice
 public class ApiExceptionHandler {

@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Контроллер api
+ */
 @RestController
 public class ShopUnitController {
 
@@ -33,16 +36,6 @@ public class ShopUnitController {
     this.service = service;
   }
 
-  @PostMapping(value = "/imports", consumes = {"application/json"})
-  public void importShopUnit(@Valid @RequestBody ShopUnitImportRequest request)
-      throws ApiException {
-    LOGGER.info("Entering api endpoint to import shop units" + request);
-    Optional<Error> result = service.importShopUnit(request);
-    if (result.isPresent()) {
-      throw new ApiException(result.get());
-    }
-  }
-
   @GetMapping(value = "/nodes/{id}")
   public ShopUnit getShopUnitById(@PathVariable("id") String id) throws ApiException {
     LOGGER.info("Entering api endpoint to get shop unit by id: " + id);
@@ -51,15 +44,6 @@ public class ShopUnitController {
       throw new ApiException(result.getError());
     } else {
       return result.getResult();
-    }
-  }
-
-  @DeleteMapping(value = "/delete/{id}")
-  public void deleteShopUnitById(@PathVariable("id") String id) throws ApiException {
-    LOGGER.info("Entering api endpoint to delete shop unit by id: " + id);
-    Optional<Error> result = service.deleteShopUnitById(id);
-    if (result.isPresent()) {
-      throw new ApiException(result.get());
     }
   }
 
@@ -89,4 +73,25 @@ public class ShopUnitController {
       return result.getResult();
     }
   }
+
+  @PostMapping(value = "/imports", consumes = {"application/json"})
+  public void importShopUnit(@Valid @RequestBody ShopUnitImportRequest request)
+      throws ApiException {
+    LOGGER.info("Entering api endpoint to import shop units" + request);
+    Optional<Error> result = service.importShopUnit(request);
+    if (result.isPresent()) {
+      throw new ApiException(result.get());
+    }
+  }
+
+  @DeleteMapping(value = "/delete/{id}")
+  public void deleteShopUnitById(@PathVariable("id") String id) throws ApiException {
+    LOGGER.info("Entering api endpoint to delete shop unit by id: " + id);
+    Optional<Error> result = service.deleteShopUnitById(id);
+    if (result.isPresent()) {
+      throw new ApiException(result.get());
+    }
+  }
+
+
 }

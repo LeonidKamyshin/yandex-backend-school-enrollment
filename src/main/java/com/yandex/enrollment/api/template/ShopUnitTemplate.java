@@ -26,6 +26,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
+/**
+ * Шаблон для выполнения запросов в коллекции {@link ShopUnit}
+ */
 @Component
 public class ShopUnitTemplate {
 
@@ -45,6 +48,11 @@ public class ShopUnitTemplate {
     this.shopUnitStatisticUnitRepository = shopUnitStatisticUnitRepository;
   }
 
+  /**
+   * Вставляет документы, обновляет если уже существуют
+   *
+   * @param shopUnits Документы которые надо вставить
+   */
   public void bulkUpsert(Collection<@NotNull ShopUnit> shopUnits) {
     if (shopUnits.size() == 0) {
       return;

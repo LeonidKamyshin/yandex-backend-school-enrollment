@@ -4,6 +4,9 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 
+/**
+ * Класс, описывающий ошибку API
+ */
 @Data
 @Getter
 public class Error {

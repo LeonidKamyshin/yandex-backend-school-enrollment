@@ -18,6 +18,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 
+/**
+ * Сервис для конвертации запросов из внешних во внутренние
+ */
 @Service
 public class ShopUnitConverterService {
 
@@ -25,6 +28,12 @@ public class ShopUnitConverterService {
 
   private final ModelMapper modelMapper = new ModelMapper();
 
+  /**
+   * Конвертирует {@link ShopUnitImportRequest} в объекты {@link ShopUnit}
+   *
+   * @param request Запрос на импорт
+   * @return Список {@link ShopUnit} на импорт
+   */
   public Collection<ShopUnit> convertShopUnitImportRequest(ShopUnitImportRequest request) {
     List<ShopUnit> shopUnits = request.getItems().stream()
         .map(r -> modelMapper.map(r, ShopUnit.class)).toList();

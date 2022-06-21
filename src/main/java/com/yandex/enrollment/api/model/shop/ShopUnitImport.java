@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 
+/**
+ * Объект, описывающий запрос на добавление товара / категории
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor
