@@ -1,6 +1,7 @@
 package com.yandex.enrollment.api.service;
 
 import com.yandex.enrollment.api.controller.ShopUnitController;
+import com.yandex.enrollment.api.model.error.Error;
 import com.yandex.enrollment.api.model.error.ErrorType;
 import com.yandex.enrollment.api.model.result.ValidationResult;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
@@ -47,14 +48,14 @@ public class ShopUnitValidationService {
    */
   public ValidationResult<Collection<ShopUnit>> validateImportRequest(
       Collection<ShopUnit> request) {
-    LOGGER.info("Проверка 1 " + checkTypeMatchRowsWithSameId().test(request));
-    LOGGER.info("Проверка 2 " + checkIdsUnique().test(request));
-    LOGGER.info("Проверка 3 " + checkParentType().test(request));
-    LOGGER.info("Проверка 4 " + checkCategoryPrice().test(request));
-    LOGGER.info("Проверка 5 " + checkOfferPrice().test(request));
-    LOGGER.info("Проверка 6 " + checkDateFormat().test(request));
-    LOGGER.info("Проверка 7 " + checkUUIDFormat().test(request));
-    LOGGER.info("Проверка 8 " + checkParentExists().test(request));
+//    LOGGER.info("Проверка 1 " + checkTypeMatchRowsWithSameId().test(request));
+//    LOGGER.info("Проверка 2 " + checkIdsUnique().test(request));
+//    LOGGER.info("Проверка 3 " + checkParentType().test(request));
+//    LOGGER.info("Проверка 4 " + checkCategoryPrice().test(request));
+//    LOGGER.info("Проверка 5 " + checkOfferPrice().test(request));
+//    LOGGER.info("Проверка 6 " + checkDateFormat().test(request));
+//    LOGGER.info("Проверка 7 " + checkUUIDFormat().test(request));
+//    LOGGER.info("Проверка 8 " + checkParentExists().test(request));
 
     ValidationResult<Collection<ShopUnit>> result = new ValidationResult<>(request);
     if (!checkCorrect().test(request)) {
@@ -216,14 +217,25 @@ public class ShopUnitValidationService {
    * @return {@link ValidationResult} провалидированную дату
    */
   public ValidationResult<String> validateDateFormat(String date) {
+    LOGGER.info("валидирую дату: " + date);
     try {
       Instant.from(DateTimeFormatter.ISO_INSTANT.parse(date));
       return new ValidationResult<>(DateUtils.unifyDate(date));
-    } catch (IllegalArgumentException e) {
+    } catch (DateTimeParseException | IllegalArgumentException e) {
       LOGGER.info("Incorrect date: " + date);
       return new ValidationResult<>(ErrorType.VALIDATION_FAILED_ERROR.getError());
     } catch (NullPointerException e) {
       return new ValidationResult<>(date);
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public ValidationResult<String> validateUUID(String id) {
+    try {
+      UUID.fromString(id);
+      return new ValidationResult<>(id);
+    } catch (DateTimeParseException | IllegalArgumentException | NullPointerException e) {
+      return new ValidationResult<>(ErrorType.VALIDATION_FAILED_ERROR.getError());
     }
   }
 }

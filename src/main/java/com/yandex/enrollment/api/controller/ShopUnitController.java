@@ -10,6 +10,7 @@ import com.yandex.enrollment.api.service.ShopUnitService;
 import java.util.Collection;
 import java.util.Optional;
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,8 +63,8 @@ public class ShopUnitController {
 
   @GetMapping(value = "/node/{id}/statistic")
   public ShopUnitStatisticResponse getSales(@PathVariable("id") String id,
-      @RequestParam(name = "date", required = false) String dateStart,
-      @RequestParam(name = "date", required = false) String dateEnd)
+      @RequestParam(name = "dateStart", required = false) String dateStart,
+      @RequestParam(name = "dateEnd", required = false) String dateEnd)
       throws ApiException {
     LOGGER.info("Entering api endpoint to get statistic by id: " + id);
     ApiResult<ShopUnitStatisticResponse> result = service.getStatistic(id, dateStart, dateEnd);
@@ -82,6 +83,7 @@ public class ShopUnitController {
     if (result.isPresent()) {
       throw new ApiException(result.get());
     }
+    LOGGER.info("Добавил ревкест");
   }
 
   @DeleteMapping(value = "/delete/{id}")
@@ -92,6 +94,4 @@ public class ShopUnitController {
       throw new ApiException(result.get());
     }
   }
-
-
 }

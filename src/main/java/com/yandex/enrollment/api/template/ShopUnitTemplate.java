@@ -92,15 +92,29 @@ public class ShopUnitTemplate {
     Map<String, ShopUnit> shopUnitsById =
         upsertShopUnits.stream().collect(Collectors.toMap(ShopUnit::getId, shopUnit -> shopUnit));
 
+    shopUnitRepository.insert(insertShopUnits);
+    insertShopUnits.stream().filter(shopUnit -> shopUnit.getType() == ShopUnitType.OFFER)
+        .forEach(shopUnit -> incPrice(shopUnit.getParentId(), shopUnit, true, true));
+
+    BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
+    insertShopUnits.stream().filter(shopUnit -> shopUnit.getParentId() != null)
+        .forEach(shopUnit -> {
+          Query query = new Query().addCriteria(Criteria.where("id").is(shopUnit.getParentId()));
+          Update update = new Update()
+              .push("children", shopUnit.getId())
+              .set("date", shopUnit.getDate());
+          bulkOps.updateOne(query, update);
+        });
+    try {
+      bulkOps.execute();
+    } catch (IllegalArgumentException ignored) {
+    }
+
     insertShopUnits.forEach(shopUnit -> {
       if (!shopUnitsById.containsKey(shopUnit.getParentId())) {
         pushChild(shopUnit, shopUnit.getParentId());
       }
     });
-
-    shopUnitRepository.insert(insertShopUnits);
-    insertShopUnits.stream().filter(shopUnit -> shopUnit.getType() == ShopUnitType.OFFER)
-        .forEach(shopUnit -> incPrice(shopUnit.getParentId(), shopUnit, true, true));
   }
 
   private void bulkUpdate(Collection<@NotNull ShopUnit> shopUnits,

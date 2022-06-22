@@ -58,6 +58,11 @@ public class ShopUnitService {
    * @return {@link ApiResult<ShopUnit>} - результат запроса
    */
   public ApiResult<ShopUnit> getShopUnitById(String id) {
+    ValidationResult<String> validationResult = validationService.validateUUID(id);
+    if (validationResult.hasErrors()) {
+      return new ApiResult<>(validationResult.getError());
+    }
+
     Optional<ShopUnit> result = shopUnitRepository.findById(id);
     result.ifPresent(this::resetNulls);
     return result.map(ApiResult::new)
@@ -112,14 +117,22 @@ public class ShopUnitService {
    */
   public ApiResult<ShopUnitStatisticResponse> getStatistic(String id, String dateStart,
       String dateEnd) {
+    ValidationResult<String> idValidationResult = validationService.validateUUID(id);
+    if (idValidationResult.hasErrors()) {
+      return new ApiResult<>(idValidationResult.getError());
+    }
     ValidationResult<String> dateStartValidationResult =
         validationService.validateDateFormat(dateStart);
     ValidationResult<String> dateEndValidationResult =
         validationService.validateDateFormat(dateEnd);
 
-    if (dateStartValidationResult.hasErrors() || dateEndValidationResult.hasErrors()) {
+    if (dateStartValidationResult.hasErrors()) {
       return new ApiResult<>(dateStartValidationResult.getError());
     } else {
+      if (dateEndValidationResult.hasErrors()) {
+        return new ApiResult<>(dateEndValidationResult.getError());
+      }
+
       dateStart = Optional.ofNullable(dateStartValidationResult.getResult())
           .orElse(DateUtils.MIN_DATE);
       dateEnd = Optional.ofNullable(dateEndValidationResult.getResult()).orElse(DateUtils.MAX_DATE);
@@ -139,6 +152,10 @@ public class ShopUnitService {
    */
   //  @Transactional
   public Optional<Error> deleteShopUnitById(String id) {
+    ValidationResult<String> idValidationResult = validationService.validateUUID(id);
+    if (idValidationResult.hasErrors()) {
+      return Optional.of(idValidationResult.getError());
+    }
     Optional<ShopUnit> root = shopUnitRepository.findById(id);
     if (root.isPresent()) {
       template.deleteShopUnit(root.get());
