@@ -1,28 +1,39 @@
 version: "3.8"
 services:
-  mongodb:
-    image: mongo
-    container_name: mongodb
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name:
+      rest_api
     ports:
-      - 27017:27017
+      - "80:80"
+    depends_on:
+      - db
+
+  db:
+    image: mongo
+    container_name: db
+    ports:
+      - "27017:27017"
     volumes:
       - data:/data
     environment:
       - MONGO_INITDB_ROOT_USERNAME=rootuser
       - MONGO_INITDB_ROOT_PASSWORD=rootpass
+
+
   mongo-express:
     image: mongo-express
     container_name: mongo-express
     restart: always
     ports:
-      - 8081:8081
+      - "8081:8081"
     environment:
       - ME_CONFIG_MONGODB_ADMINUSERNAME=rootuser
       - ME_CONFIG_MONGODB_ADMINPASSWORD=rootpass
-      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_SERVER=db
+
 volumes:
   data: {}
 
-networks:
-  default:
-    name: mongodb_network1

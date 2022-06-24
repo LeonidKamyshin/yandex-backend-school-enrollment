@@ -34,6 +34,9 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
   @Value("${spring.data.mongodb.port}")
   private String port;
 
+  @Value("${spring.data.mongodb.host}")
+  private String host;
+
   @Bean
   MongoTransactionManager transactionManager(MongoDatabaseFactory dbFactory) {
     return new MongoTransactionManager(dbFactory);
@@ -42,7 +45,7 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
   @Override
   public MongoClient mongoClient() {
     final ConnectionString connectionString = new ConnectionString(
-        "mongodb://localhost:" + port + "/" + database);
+        "mongodb://" + host + ":" + port + "/" + database);
     final MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
         .applyConnectionString(connectionString)
         .credential(
