@@ -2,7 +2,7 @@ version: "3.8"
 services:
   backend:
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile
     container_name:
       rest_api
@@ -10,6 +10,7 @@ services:
       - "80:80"
     depends_on:
       - db
+    restart: always
 
   db:
     image: mongo
@@ -21,7 +22,7 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=rootuser
       - MONGO_INITDB_ROOT_PASSWORD=rootpass
-
+    restart: always
 
   mongo-express:
     image: mongo-express
