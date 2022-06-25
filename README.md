@@ -11,6 +11,8 @@
 - Log4j2
 - Docker
 - Swagger 3
+- Mockito
+- JUnit5
 
 Системные требования:
 =
