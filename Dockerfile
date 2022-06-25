@@ -3,7 +3,6 @@ FROM openjdk:17 as base
 
 WORKDIR .
 
-
 COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
 
