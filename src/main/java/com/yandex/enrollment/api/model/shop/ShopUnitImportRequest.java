@@ -1,6 +1,5 @@
 package com.yandex.enrollment.api.model.shop;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;

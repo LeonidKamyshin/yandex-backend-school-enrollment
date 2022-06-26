@@ -5,9 +5,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Утилита для упрощения работы с датамими
- * Работает с датами в формате ISO 8601
- * Строки - всегда дата по шаблону {@link DateUtils#formatter}
+ * Утилита для упрощения работы с датамими Работает с датами в формате ISO 8601 Строки - всегда дата
+ * по шаблону {@link DateUtils#formatter}
  */
 public class DateUtils {
 

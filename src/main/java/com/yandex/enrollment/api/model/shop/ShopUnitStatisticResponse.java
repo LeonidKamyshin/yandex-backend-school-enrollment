@@ -14,5 +14,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShopUnitStatisticResponse {
+
   private List<ShopUnitStatisticsUnit> items;
 }

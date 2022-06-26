@@ -4,6 +4,7 @@ import com.yandex.enrollment.api.model.error.Error;
 
 /**
  * Result, который выдает сервис после валидации
+ *
  * @param <T> Класс объекта
  */
 public class ValidationResult<T> extends Result<T> {
@@ -12,7 +13,7 @@ public class ValidationResult<T> extends Result<T> {
     super(result);
   }
 
-  public ValidationResult(Error error){
+  public ValidationResult(Error error) {
     super(error);
   }
 }

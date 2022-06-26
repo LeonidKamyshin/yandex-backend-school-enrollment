@@ -74,7 +74,7 @@ public class ShopUnitTemplate {
     bulkUpdate(updateShopUnits, oldShopUnits);
 
     String date = shopUnits.stream().findFirst().orElse(ShopUnit.builder().build()).getDate();
-    LOGGER.info("Копирую по дате: " + date);
+    LOGGER.info("Добавил объекты в бд");
     saveStatisticOnDate(date);
   }
 
@@ -163,14 +163,13 @@ public class ShopUnitTemplate {
       child.setTruePrice(repositoryChild.getTruePrice());
       child.setUnitsCount(repositoryChild.getUnitsCount());
     }
-    LOGGER.info("Пушу ребёнка: " + child);
-    LOGGER.info("Был родитель: " + prevParentId);
-    LOGGER.info("Стал родитель: " + newParentId);
     subPrice(prevParentId, child, true, true);
     pullChild(child, prevParentId);
 
     pushChild(child, newParentId);
     incPrice(newParentId, child, true, true);
+    LOGGER.debug("Перевесил ребёнка: [child={}, prevParent={}, newParent={}", child, prevParentId,
+        newParentId);
   }
 
   /**
@@ -180,9 +179,7 @@ public class ShopUnitTemplate {
    */
   private void pushChild(ShopUnit child, @NotNull String parentId) {
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
-    LOGGER.info("!!! Дата для " + child.getId() + " " + child.getDate());
-    LOGGER.info("Ставлю ребёнка: " + child);
-    LOGGER.info("Родитель ребёнка: " + parentId);
+
     Query query = new Query().addCriteria(Criteria.where("id").is(parentId));
     Update update = new Update()
         .addToSet("children", child.getId())
@@ -199,6 +196,7 @@ public class ShopUnitTemplate {
       bulkOps.execute();
     } catch (IllegalArgumentException ignored) {
     }
+    LOGGER.debug("Запушил: [id={}, date={}, parent={}]", child.getId(), child.getDate(), parentId);
   }
 
   /**
@@ -209,7 +207,6 @@ public class ShopUnitTemplate {
   private void pullChild(ShopUnit child, @NotNull String parentId) {
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
 
-    LOGGER.info("!!! Дата для " + child.getId() + " " + child.getDate());
     Query query = new Query().addCriteria(Criteria.where("id").is(parentId));
     Update update = new Update()
         .pull("children", child.getId())
@@ -219,6 +216,7 @@ public class ShopUnitTemplate {
       bulkOps.execute();
     } catch (IllegalArgumentException ignored) {
     }
+    LOGGER.debug("Запулил: [id={}, date={}]", child.getId(), child.getDate());
   }
 
   /**
@@ -235,25 +233,21 @@ public class ShopUnitTemplate {
       return;
     }
 
-    LOGGER.info("Начинаю увеличивать цену по value: " + value);
-    LOGGER.info("Начиная с Id: " + id);
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
     ShopUnit curShopUnit;
-    while (id != null) {
-      curShopUnit = shopUnitRepository.findWithoutChildrenIdById(id);
-      id = curShopUnit.getParentId();
-      LOGGER.info("Текущий id: " + curShopUnit.getId());
+    String curId = id;
+    while (curId != null) {
+      curShopUnit = shopUnitRepository.findWithoutChildrenIdById(curId);
+      curId = curShopUnit.getParentId();
+      LOGGER.debug("Текущий id для обновления цены: [curId={}]", curShopUnit.getId());
       Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));
       Update update = new Update();
       if (updateDate) {
         update.set("date", value.getDate());
       }
 
-      LOGGER.info("Увеличиваю truePrice на: " + value.getTruePrice());
       update.inc("truePrice", value.getTruePrice());
       curShopUnit.setTruePrice(curShopUnit.getTruePrice() + value.getTruePrice());
-
-      LOGGER.info("Поставил локально truePrice на: " + curShopUnit.getTruePrice());
 
       if (changeUnitsCount) {
         update.inc("unitsCount", value.getUnitsCount());
@@ -270,6 +264,7 @@ public class ShopUnitTemplate {
       bulkOps.execute();
     } catch (IllegalArgumentException ignored) {
     }
+    LOGGER.debug("Прибавил к цене: [id={}, value={}]", id, value);
   }
 
   /**
@@ -288,10 +283,12 @@ public class ShopUnitTemplate {
 
     BulkOperations bulkOps = template.bulkOps(BulkMode.UNORDERED, ShopUnit.class);
     ShopUnit curShopUnit;
-    while (id != null) {
-      curShopUnit = shopUnitRepository.findWithoutChildrenIdById(id);
-      id = curShopUnit.getParentId();
+    String curId = id;
+    while (curId != null) {
+      curShopUnit = shopUnitRepository.findWithoutChildrenIdById(curId);
+      curId = curShopUnit.getParentId();
 
+      LOGGER.debug("Текущий id для обновления цены: [curId={}]", curShopUnit.getId());
       Query query = new Query().addCriteria(Criteria.where("id").is(curShopUnit.getId()));
       Update update = new Update();
       if (updateDate) {
@@ -318,6 +315,7 @@ public class ShopUnitTemplate {
       bulkOps.execute();
     } catch (IllegalArgumentException ignored) {
     }
+    LOGGER.debug("Вычел из цены: [id={}, value={}]", id, value);
   }
 
   /**
@@ -352,7 +350,7 @@ public class ShopUnitTemplate {
   private void saveStatisticOnDate(String date) {
     Collection<ShopUnitStatisticsUnit> statisticsUnits = shopUnitRepository
         .findAllWithoutChildrenByDate(date);
-    LOGGER.info("Получил статистики: " + statisticsUnits);
     shopUnitStatisticUnitRepository.insert(statisticsUnits);
+    LOGGER.info("Сохранил статистику");
   }
 }

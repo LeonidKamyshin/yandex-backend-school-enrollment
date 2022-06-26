@@ -2,7 +2,6 @@ package com.yandex.enrollment.api.controller;
 
 import com.yandex.enrollment.api.exception.ApiException;
 import com.yandex.enrollment.api.model.error.Error;
-import com.yandex.enrollment.api.model.error.ErrorType;
 import com.yandex.enrollment.api.model.result.ApiResult;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
@@ -15,13 +14,11 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Optional;
 import javax.validation.Valid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnJndi;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,6 +41,7 @@ public class ShopUnitController {
   public ShopUnitController(ShopUnitService service) {
     this.service = service;
   }
+
   @Operation(
       description =
           """
@@ -127,11 +125,12 @@ public class ShopUnitController {
               schema = @Schema(implementation = Error.class)))})
   @GetMapping(value = "/nodes/{id}")
   public ShopUnit getShopUnitById(@PathVariable("id") String id) throws ApiException {
-    LOGGER.info("Entering api endpoint to get shop unit by id: " + id);
     ApiResult<ShopUnit> result = service.getShopUnitById(id);
     if (result.hasErrors()) {
+      LOGGER.info("Запрос с ошибкой: [{}]", result.getError().getMessage());
       throw new ApiException(result.getError());
     } else {
+      LOGGER.info("Получил ShopUnit по [{}]", id);
       return result.getResult();
     }
   }
@@ -186,11 +185,12 @@ public class ShopUnitController {
   @GetMapping(value = "/sales")
   public ShopUnitStatisticResponse getSales(@RequestParam(name = "date") String date)
       throws ApiException {
-    LOGGER.info("Entering api endpoint to get sales by date: " + date);
     ApiResult<ShopUnitStatisticResponse> result = service.getSales(date);
     if (result.hasErrors()) {
+      LOGGER.info("Запрос с ошибкой: [{}]", result.getError().getMessage());
       throw new ApiException(result.getError());
     } else {
+      LOGGER.info("Получил sales с датой [{}]", date);
       return result.getResult();
     }
   }
@@ -264,11 +264,13 @@ public class ShopUnitController {
   public ShopUnitStatisticResponse getStatistic(@PathVariable("id") String id,
       @RequestParam(name = "dateStart", required = false) String dateStart,
       @RequestParam(name = "dateEnd", required = false) String dateEnd) throws ApiException {
-    LOGGER.info("Entering api endpoint to get statistic by id: " + id);
     ApiResult<ShopUnitStatisticResponse> result = service.getStatistic(id, dateStart, dateEnd);
     if (result.hasErrors()) {
+      LOGGER.info("Запрос с ошибкой: [{}]", result.getError().getMessage());
       throw new ApiException(result.getError());
     } else {
+      LOGGER.info("Получил statistic с параметрами: [id: {}, dateStart: {}, dateEnd: {}]", id,
+          dateStart, dateEnd);
       return result.getResult();
     }
   }
@@ -319,12 +321,12 @@ public class ShopUnitController {
   @PostMapping(value = "/imports", consumes = {"application/json"})
   public void importShopUnit(@Valid @RequestBody ShopUnitImportRequest request)
       throws ApiException {
-    LOGGER.info("Entering api endpoint to import shop units" + request);
     Optional<Error> result = service.importShopUnit(request);
     if (result.isPresent()) {
+      LOGGER.info("Запрос с ошибкой: [{}]", result.get().getMessage());
       throw new ApiException(result.get());
     }
-    LOGGER.info("Добавил ревкест");
+    LOGGER.info("Успешно добавил объекты");
   }
 
   @Operation(
@@ -368,10 +370,11 @@ public class ShopUnitController {
               schema = @Schema(implementation = Error.class)))})
   @DeleteMapping(value = "/delete/{id}")
   public void deleteShopUnitById(@PathVariable("id") String id) throws ApiException {
-    LOGGER.info("Entering api endpoint to delete shop unit by id: " + id);
     Optional<Error> result = service.deleteShopUnitById(id);
     if (result.isPresent()) {
+      LOGGER.info("Запрос с ошибкой: [{}]", result.get().getMessage());
       throw new ApiException(result.get());
     }
+    LOGGER.info("Успешно удалил по [id: {}]", id);
   }
 }

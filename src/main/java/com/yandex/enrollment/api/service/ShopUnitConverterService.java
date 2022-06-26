@@ -3,10 +3,7 @@ package com.yandex.enrollment.api.service;
 import com.yandex.enrollment.api.controller.ShopUnitController;
 import com.yandex.enrollment.api.model.shop.ShopUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitImportRequest;
-import com.yandex.enrollment.api.model.shop.ShopUnitStatisticResponse;
-import com.yandex.enrollment.api.model.shop.ShopUnitStatisticsUnit;
 import com.yandex.enrollment.api.model.shop.ShopUnitType;
-import com.yandex.enrollment.api.utils.DateUtils;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +51,8 @@ public class ShopUnitConverterService {
         shopUnit.setTruePrice(shopUnit.getPrice());
       }
     });
+
+    LOGGER.info("Сконвертировал запрос");
     return shopUnits;
   }
 }

@@ -14,14 +14,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
-//  @Bean
-//  public GroupedOpenApi publicUserApi() {
-//    return GroupedOpenApi.builder()
-//        .group("Users")
-//        .pathsToMatch("/nodes/**")
-//        .build();
-//  }
-
   @Bean
   public OpenAPI customOpenApi(@Value("${application-title}") String appTitle,
       @Value("${application-version}") String appVersion) {
