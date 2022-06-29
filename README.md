@@ -6,7 +6,6 @@
 Для написания API я использовал:
 =
 - Spring Boot
-- Spring Data
 - MongoDB
 - Log4j2
 - Docker
