@@ -1,3 +1,7 @@
+Description:
+=
+REST API service which allows you to store and interact with products/sales
+
 Used technologies:
 =
 - Spring Boot
