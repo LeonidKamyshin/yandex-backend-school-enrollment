@@ -1,9 +1,6 @@
-# Вступительное задание в Летнюю Школу Бэкенд Разработки Яндекса 2022
-
-Задание выполнил Камышин Леонид
 =
 
-Для написания API я использовал:
+Used technologies:
 =
 - Spring Boot
 - MongoDB
@@ -13,31 +10,18 @@
 - Mockito
 - JUnit5
 
-Системные требования:
+System requirements:
 =
 - JDK 17
 - Maven
 - Docker
 
 
-Документация
+Documentation
 =
-Документация доступна по ссылке:
-- http://localhost:80/swagger-ui.html (для локального доступа)
-- https://biotechnology-1872.usr.yandex-academy.ru/swagger-ui.html (публичная ссылка)
+- http://localhost:80/swagger-ui.html (local access)
 
-Сборка и запуск
+Build and deployment
 =
 1. docker-compose up
-2. После этого приложение будет доступно на localhost:80
-3. Публичная ссылка: https://biotechnology-1872.usr.yandex-academy.ru
-
-Что можно было (или нужно было) сделать ещё
-=
-- Сделать операции транзакциями
-- Написать интеграционные тесты
-- Написать больше юнит-тестов
-- Создать тестовую бд
-- Известна ошибка: строки 0 и 1 в поле type конвертируются в enum без ошибки
-- Более подробная документация апи (Пустые схемы)
-- Сделать CI/CD
+2. Application available at localhost:80
