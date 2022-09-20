@@ -1,5 +1,3 @@
-=
-
 Used technologies:
 =
 - Spring Boot
